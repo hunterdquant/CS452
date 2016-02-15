@@ -1,0 +1,33 @@
+Pipeline is a way of parellelizing operations.
+  Do multiplication while adder is in use.
+
+Graphics Pipeline
+  vertices -> vertex processor -> transformation of vertices.
+  transformation -> clipping and primative assembly -> primatives (shapes)
+    clipping rectangle cuts triangles on the border into multiple triangles
+      doesnt render those outside.
+  primatives -> rasterization -> pixels (fragments) -> (color : depth)
+  pixels -> fragment processor (light computation) -> pixels (fragments) drawn to framebuffer. obstructed pixels are removed.
+    Until drawn to framebuffer pixels are represented in 3D even though they are 2D entities.
+
+  main four stages of graphics processing (pipeline)
+  vertex processor -> cliiping and primitive assembly -> rasterization -> fragment processor
+
+  Now graphics pipelines are customizable.
+  we'll use vertex shader and fragment shader.
+
+  vertex processor -> transformation of vertices
+  clipping and primitive assembly -> creates primitive shapes
+  rasterization -> associates pixels to each primative
+  fragment processor -> draws pixels to the framebuffer and discards obstructed pixels.
+
+  opengl and webgl timeline
+    opengl 1.0 1992 (immediate mode) -> opengl 2.0 2004 (retained mode) -> opengl 3.0 2008 -> opengl 4.5 2014
+    opengl -> open source graphics library
+    opengl es -> for embedded systems.
+    opengl es 1.0 2003 -> 2.0 2007 -> 3.0 2012
+
+    webgl -> javascript interface to opengl es 2.0 for web graphics apps
+    webgl 1.0 2011
+
+    MORE NOTES IN JS FILES

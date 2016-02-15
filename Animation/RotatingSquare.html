@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+            <title>Rotating Square</title>
+            <style media="screen">
+              canvas {
+                display: flex;
+                width: 512px;
+                margin: auto auto;
+              }
+              button {
+                display: block;
+                margin: 0 auto;
+              }
+            </style>
+            <script id="vertex-shader" type="x-shader/x-vertex">
+                attribute vec4 myPosition;
+                // Uniform because rigged rotation.
+                uniform float theta;
+                uniform vec2 displacement;
+                void main() {
+                    gl_PointSize = 1.0;
+                    gl_Position.x = myPosition.x*cos(theta) + myPosition.y*sin(theta) + displacement.x;
+                    gl_Position.y = myPosition.x*(-sin(theta)) + myPosition.y*cos(theta) + displacement.y;
+                    gl_Position.z = 0.0;
+                    gl_Position.w = 1.0;
+                }
+
+            </script>
+
+            <script id="fragment-shader" type="x-shader/x-fragment">
+                void main() {
+                    gl_FragColor = vec4( 1.0, 1.0, 0.0, 1.0 );
+                }
+
+            </script>
+
+            <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+            <script type="text/javascript" src="../Common/initShaders.js"></script>
+            <script type="text/javascript" src="../Common/MV.js"></script>
+
+            <script type="text/javascript" src="RotatingSquare.js"></script>
+
+    </head>
+
+    <body onload = "drawSquare()" onkeydown="myKeyWasPressed(event)">
+        <canvas id="gl-canvas"  onclick="myMouseWasClicked(event)"  width="512" height="512">
+        </canvas><br/>
+        <button onclick="functionStartStop()" id="stopStartButton">Start/Stop</button>
+    </body>
+</html>

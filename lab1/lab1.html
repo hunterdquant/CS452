@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Computer Graphics Lab 1</title>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 myPosition;
+      uniform float scale;
+      void main() {
+        gl_PointSize = 1.0;
+        gl_Position = myPosition;
+        gl_Position.x = (gl_Position.x)*scale;
+        gl_Position.y = (gl_Position.y)*scale;
+      }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      uniform vec4 color;
+      void main() {
+        gl_FragColor = color;
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="lab1.js"></script>
+  </head>
+  <body onload="drawShapes()">
+      <canvas id="gl-canvas" width="720" height="720">
+      </canvas>
+  </body>
+</html>
