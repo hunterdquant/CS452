@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Computer Graphics Lab 2</title>
+
+    <style media="screen">
+
+      body {
+        background-color: slategray;
+      }
+
+      h1 {
+        font-size: 72px;
+        text-align: center;
+        background: radial-gradient(circle, white, cyan);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      canvas {
+        display: block;
+        margin: 50px auto 0 auto;
+        border: 5px solid cyan;
+      }
+
+      #buttons {
+        width: 350px;
+        margin: 0 auto;
+      }
+
+      #buttons button {
+        margin: 0 auto;
+      }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 myPosition;
+      uniform mat3 M;
+      void main() {
+        vec3 vi;
+        vec3 vf;
+        vi[0] = myPosition.x;
+        vi[1] = myPosition.y;
+        vi[2] = 1.0;
+        vf = M*vi;
+        gl_PointSize = 1.0;
+        gl_Position = myPosition;
+        gl_Position.x = vf[0];
+        gl_Position.y = vf[1];
+      }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      uniform vec4 color;
+      void main() {
+        gl_FragColor = color;
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="lab2.js"></script>
+  </head>
+  <body onload="init()" onkeydown="changeDirection(event)">
+      <h1>STAR DEFENDER!</h1>
+      <canvas id="gl-canvas" onclick="translateToMouse(event)" width="512" height="512">
+      </canvas>
+      <br/>
+      <div id="buttons">
+        <button id="rotateButton" onclick="toggleRotation()">Toggle Rotation</button>
+        <button id="increaseButton" onclick="increaseSpeed()">Increase Speed</button>
+        <button id="increaseButton" onclick="decreaseSpeed()">Decrease Speed</button>
+      </div>
+  </body>
+</html>
