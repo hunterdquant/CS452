@@ -18,20 +18,36 @@
         -webkit-text-fill-color: transparent;
       }
 
+      .play {
+        width: 512px;
+        margin: 10px auto;
+      }
+
       canvas {
-        display: block;
-        margin: 50px auto 0 auto;
         border: 5px solid cyan;
       }
 
+      #how-to {
+        border: 5px solid cyan;
+        border-radius: 5px;
+        background-color: white;
+        padding: 25px;
+        display: inline-block;
+        margin-left: 5%;
+        width: 25%;
+        clear: both;
+        float: left;
+      }
+
       #buttons {
-        width: 350px;
         margin: 0 auto;
       }
 
       #buttons button {
-        margin: 0 auto;
+        display: inline;
+        margin: 28px;
       }
+
     </style>
 
     <script id="vertex-shader" type="x-shader/x-vertex">
@@ -65,13 +81,26 @@
   </head>
   <body onload="init()" onkeydown="changeDirection(event)">
       <h1>STAR DEFENDER!</h1>
-      <canvas id="gl-canvas" onclick="translateToMouse(event)" width="512" height="512">
-      </canvas>
-      <br/>
-      <div id="buttons">
-        <button id="rotateButton" onclick="toggleRotation()">Toggle Rotation</button>
-        <button id="increaseButton" onclick="increaseSpeed()">Increase Speed</button>
-        <button id="increaseButton" onclick="decreaseSpeed()">Decrease Speed</button>
+      <div id="how-to">
+        <h2>HOW TO PLAY</h2>
+        <ul>
+          <li>Use WASD to change the direction the shape will move in.</li>
+          <li>The toggle rotation button toggles rotation!</li>
+          <li>The increase speed button increases the speed at which the shape moves.</li>
+          <li>The decrease speed button decreases the speed at which the shape moves.</li>
+          <li>Click to the square to move the shape to your cursor!</li>
+          <li>Win condition: self defined!</li>
+        </ul>
+      </div>
+      <div class="play">
+        <canvas id="gl-canvas" onclick="translateToMouse(event)" width="512" height="512">
+        </canvas>
+        <br/>
+        <div id="buttons">
+          <button id="rotateButton" onclick="toggleRotation()">Toggle Rotation</button>
+          <button id="increaseButton" onclick="increaseSpeed()">Increase Speed</button>
+          <button id="increaseButton" onclick="decreaseSpeed()">Decrease Speed</button>
+        </div>
       </div>
   </body>
 </html>
