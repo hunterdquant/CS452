@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Carbon Nation</title>
+    <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 myPosition;
+      uniform mat3 M;
+      void main() {
+        vec3 vi;
+        vec3 vf;
+        vi[0] = myPosition.x;
+        vi[1] = myPosition.y;
+        vi[2] = 1.0;
+        vf = M*vi;
+        gl_PointSize = 1.0;
+        gl_Position = myPosition;
+        gl_Position.x = vf[0];
+        gl_Position.y = vf[1];
+      }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+      uniform vec4 color;
+      void main() {
+        gl_FragColor = color;
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="carbonNation.js"></script>
+  </head>
+  <body onload="init()" onkeydown="keyDown(event)" onkeyup="keyUp(event)">
+      <h1>Carbon Nation</h1>
+      <div id="how-to">
+        <h2>HOW TO PLAY</h2>
+        <ul>
+          <li>Use WASD to change the direction the shape will move in.</li>
+          <li>The toggle rotation button toggles rotation!</li>
+          <li>The increase speed button increases the speed at which the shape moves.</li>
+          <li>The decrease speed button decreases the speed at which the shape moves.</li>
+          <li>Click in the square to move the shape to your cursor!</li>
+          <li>Win condition: self defined!</li>
+        </ul>
+      </div>
+      <div class="play">
+        <canvas id="gl-canvas" onclick="translateToMouse(event)" width="512" height="512">
+        </canvas>
+        <br/>
+        <div id="buttons">
+          <button id="rotateButton" onclick="toggleRotation()">Toggle Rotation</button>
+          <button id="increaseButton" onclick="increaseSpeed()">Increase Speed</button>
+          <button id="increaseButton" onclick="decreaseSpeed()">Decrease Speed</button>
+        </div>
+      </div>
+  </body>
+</html>
