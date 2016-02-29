@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Computer Graphics Lab 3</title>
+
+    <style media="screen">
+
+      body {
+        background-color: slategray;
+      }
+
+      h1 {
+        font-size: 72px;
+        text-align: center;
+        background: radial-gradient(circle, white, cyan);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .play {
+        width: 512px;
+        margin: 10px auto;
+      }
+
+      canvas {
+        border: 5px solid cyan;
+      }
+
+      #buttons {
+        margin: 0 auto;
+      }
+
+      #buttons button {
+        min-width: 168px;
+        display: inline;
+        margin-top: 28px;
+      }
+
+      #how-to {
+        border: 5px solid cyan;
+        border-radius: 5px;
+        background-color: white;
+        padding: 25px;
+        display: inline;
+        margin: 20px auto;
+        width: 512px;
+        float: left;
+      }
+    </style>
+
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      attribute vec4 vertexPosition;
+      attribute vec4 vertexColor;
+
+      uniform mat4 MScale;
+      uniform mat4 MRotZ;
+      uniform mat4 MRotY;
+      uniform mat4 MRotX;
+      uniform mat4 MTrans;
+
+      varying vec4 fragmentColor;
+      void main() {
+        fragmentColor = vertexColor;
+        vec4 vi;
+        vec4 vf;
+        vi[0] = vertexPosition.x;
+        vi[1] = vertexPosition.y;
+        vi[2] = vertexPosition.z;
+        vi[3] = 1.0;
+        vf = MTrans*MRotX*MRotY*MRotZ*MScale*vi;
+        gl_PointSize = 1.0;
+        gl_Position = vertexPosition;
+        gl_Position.x = vf[0];
+        gl_Position.y = vf[1];
+        gl_Position.z = vf[2];
+      }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      precision mediump float;
+
+      uniform vec4 color;
+
+      varying vec4 fragmentColor;
+      void main() {
+        gl_FragColor = fragmentColor;
+      }
+    </script>
+
+    <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+    <script type="text/javascript" src="../Common/initShaders.js"></script>
+    <script type="text/javascript" src="../Common/MV.js"></script>
+    <script type="text/javascript" src="lab3.js"></script>
+  </head>
+  <body onload="init()" onkeydown="keyPressed(event)">
+      <h1>STAR DEFENDER 2!</h1>
+
+      <div id="how-to">
+        <h2>HOW TO PLAY</h2>
+        <ul>
+          <li>Use WASD to translate the shape position in the XY-plane.</li>
+          <li>The z, x, and c keys rotate around the z, y, x axes respectively.</li>
+          <li>The directional arrows scale the shape in the XY-plane</li>
+          <li>There is three buttons that toggle rotation around a specifc axis.</li>
+          <li>There is two buttons that start and stop automatic rotation.</li>
+          <li>There is a button to reset the shape to its default position and values.</li>
+        </ul>
+      </div>
+
+      <div class="play">
+        <canvas id="gl-canvas" width="512" height="512">
+        </canvas>
+        <br/>
+        <div id="buttons">
+          <button id="rotateZButton" onclick="toggleZRotation()">Toggle Z-axis Rotation</button>
+          <button id="rotateYButton" onclick="toggleYRotation()">Toggle Y-axis Rotation</button>
+          <button id="rotateXButton" onclick="toggleXRotation()">Toggle X-axis Rotation</button>
+          <button id="startButton" onclick="startRotation()">Start All Rotation</button>
+          <button id="stopButton" onclick="stopRotation()">Stop All Rotation</button>
+          <button id="resetButton" onclick="reset()">Reset Shape</button>
+        </div>
+      </div>
+  </body>
+</html>
