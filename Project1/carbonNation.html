@@ -2,55 +2,27 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Computer Graphics Lab 2</title>
+    <title>Carbon Nation</title>
     <link href='https://fonts.googleapis.com/css?family=Pacifico' rel='stylesheet' type='text/css'>
     <style media="screen">
-
-      body {
+      html {
         background-color: slategray;
       }
-
       h1 {
-        font-family: Pacifico;
-        font-size: 72px;
+        color: white;
         text-align: center;
-        background: radial-gradient(circle, white, cyan);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
       }
 
       .play {
         width: 512px;
-        margin: 10px auto;
-      }
-
-      canvas {
-        border: 5px solid cyan;
-      }
-
-      #how-to {
-        border: 5px solid cyan;
-        border-radius: 5px;
-        background-color: white;
-        padding: 25px;
-        display: inline-block;
-        margin-left: 5%;
-        width: 25%;
-        clear: both;
-        float: left;
-      }
-
-      #buttons {
         margin: 0 auto;
       }
 
-      #buttons button {
-        display: inline;
-        margin: 28px;
+      .play canvas {
+        padding: 0;
+        border: 2px solid black;
       }
-
     </style>
-
     <script id="vertex-shader" type="x-shader/x-vertex">
       attribute vec4 myPosition;
       uniform mat3 M;
@@ -78,30 +50,13 @@
     <script type="text/javascript" src="../Common/webgl-utils.js"></script>
     <script type="text/javascript" src="../Common/initShaders.js"></script>
     <script type="text/javascript" src="../Common/MV.js"></script>
-    <script type="text/javascript" src="lab2.js"></script>
+    <script type="text/javascript" src="carbonNation.js"></script>
   </head>
-  <body onload="init()" onkeydown="changeDirection(event)">
-      <h1>STAR DEFENDER!</h1>
-      <div id="how-to">
-        <h2>HOW TO PLAY</h2>
-        <ul>
-          <li>Use WASD to change the direction the shape will move in.</li>
-          <li>The toggle rotation button toggles rotation!</li>
-          <li>The increase speed button increases the speed at which the shape moves.</li>
-          <li>The decrease speed button decreases the speed at which the shape moves.</li>
-          <li>Click in the square to move the shape to your cursor!</li>
-          <li>Win condition: self defined!</li>
-        </ul>
-      </div>
+  <body onload="init()" onkeydown="keyDown(event)" onkeyup="keyUp(event)">
+      <h1>Carbon Nation</h1>
       <div class="play">
-        <canvas id="gl-canvas" onclick="translateToMouse(event)" width="512" height="512">
+        <canvas id="gl-canvas" width="512" height="512">
         </canvas>
-        <br/>
-        <div id="buttons">
-          <button id="rotateButton" onclick="toggleRotation()">Toggle Rotation</button>
-          <button id="increaseButton" onclick="increaseSpeed()">Increase Speed</button>
-          <button id="increaseButton" onclick="decreaseSpeed()">Decrease Speed</button>
-        </div>
       </div>
   </body>
 </html>

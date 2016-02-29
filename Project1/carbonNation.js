@@ -8,19 +8,8 @@
 var gl;
 var shaderProgram;
 var arrayOfVertices;
-// Rotation value
-var flatzTheta;
-// Displacement values
-var flatzX, flatzY;
-// Displacement step values
-var xStep, yStep;
-// Displacement step scale value
-var stepScale;
-// Rotation flag
-var isRotating;
-// Base step value
-var baseStep;
-
+var flatz;
+var circles;
 var keyMapping;
 
 /* Initializes WebGL and globals */
@@ -34,100 +23,140 @@ function init() {
   gl.clearColor(0.9, 0.3, 0.3, 1.0);
 
   // Set globals to their initial values.
-  flatzX = flatzY = 0;
-  baseStep = 0.001;
-  xStep = baseStep;
-  yStep = 0;
-  stepScale = 1;
-  isRotating = false;
-  flatzTheta = 0.0;
+  initFlatz();
+  circles = [];
   keyMapping = {};
 
-  // Assign shape vertices.
-  arrayOfVertices = getVertices();
-
-  // Create and bind buffer.
-  var bufferId = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
-  gl.bufferData(gl.ARRAY_BUFFER, flatten(arrayOfVertices), gl.STATIC_DRAW);
-
+  initBuffer();
   // Initialize shaders and start shader program.
   shaderProgram = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(shaderProgram);
 
-  // Enable the vertex shader to access vertex position information.
+  gameLoop();
+}
+
+/* Draws buffer contents to the screen and calculates vertex transformations. */
+function gameLoop() {
+  updateKeyInfo();
+
+  var radius = Math.random();
+  if (radius < 0.1)
+    generateCircle(radius);
+  gl.clear( gl.COLOR_BUFFER_BIT );
+  drawFlatz();
+  drawCirclesAndCheckCollision();
+  requestAnimFrame(gameLoop);
+}
+
+function generateCircle(r) {
+  var v = [];
+  var n = 16;
+  var step = 2*Math.PI/n;
+  for (var i = 0; i < n; i++) {
+    v.push(vec2(r*Math.cos(i*step), r*Math.sin(i*step)));
+  }
+  var circle = {
+    vertices: v,
+    radius: r,
+    x: (Math.random() > .5) ? -1*Math.random() : Math.random(),
+    y: -1.25,
+    step: r/10
+  };
+  circles.push(circle);
+}
+
+function initFlatz() {
+  flatz = {};
+  flatz.theta = 0.0;
+  flatz.x = 0;
+  flatz.y = 0;
+  flatz.body = getFlatzBodyVertices();
+  flatz.legs = getFlatzlegVertices();
+  flatz.foot = getFlatzFootVertices();
+}
+
+function initBuffer() {
+    var bufferId = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+}
+
+function drawCirclesAndCheckCollision() {
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  gl.uniform4f(color, 0.10, 0.44, 0.69, 1.0);
+  for (var i = circles.length - 1; i >= 0; i--) {
+    var circle = circles[i];
+    if (circle.y > 1.25) {
+      circles.splice(i, 1);
+      continue;
+    }
+    if (Math.abs(circle.x - flatz.x) <= circle.radius + 0.05 && Math.abs(circle.y - flatz.y) <= circle.radius + 0.016) {
+      circles.splice(i, 1);
+      continue;
+    }
+    circle.y += circle.step;
+    console.log(circle.x + "  " +  circle.y);
+    var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, circle.x, circle.y, 1.0];
+    var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+    gl.uniformMatrix3fv(matrixLoc, false, matrix);
+
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(circle.vertices), gl.STATIC_DRAW);
+    var color = gl.getUniformLocation(shaderProgram, "color");
+    gl.drawArrays( gl.TRIANGLE_FAN, 0, circle.vertices.length);
+  }
+}
+
+function drawFlatz() {
+  var matrix = [Math.cos(flatz.theta), -Math.sin(flatz.theta), 0.0,Math.sin(flatz.theta), Math.cos(flatz.theta), 0.0,flatz.x, flatz.y, 0.0];
+  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+  gl.uniformMatrix3fv(matrixLoc, false, matrix);
+
   var myPosition = gl.getAttribLocation(shaderProgram, "myPosition");
   gl.vertexAttribPointer(myPosition, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(myPosition);
 
-  // Set uniform fragment color.
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(flatz.body), gl.STATIC_DRAW);
   var color = gl.getUniformLocation(shaderProgram, "color");
   gl.uniform4f(color, 0.0, 0.9, 0.9, 1.0);
+  gl.drawArrays( gl.TRIANGLE_FAN, 0, flatz.body.length);
 
-  // Set animation
-  setInterval(render, 1);
-}
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(flatz.legs), gl.STATIC_DRAW);
+  gl.drawArrays( gl.LINES, 0, flatz.legs.length);
 
-/* Draws buffer contents to the screen and calculates vertex transformations. */
-function render() {
-  updateKeyInfo();
-  // Matrix to represent a clockwise rotation and a translation to x and y.
-  var matrix = [Math.cos(flatzTheta), -Math.sin(flatzTheta), 0.0,Math.sin(flatzTheta), Math.cos(flatzTheta), 0.0,flatzX, flatzY, 0.0];
-
-  // Set the uniform matrix.
-  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
-  gl.uniformMatrix3fv(matrixLoc, false, matrix);
-
-  // Draw buffer.
-  gl.clear( gl.COLOR_BUFFER_BIT );
-  gl.drawArrays( gl.TRIANGLE_FAN, 0, arrayOfVertices.length);
-}
-
-/* Toggles rotation status */
-function toggleRotation() {
-  // Simply assign the flag to its opposite.
-  isRotating = !isRotating;
-}
-
-/* Sets the displacement values to the mouse click location */
-function translateToMouse(event) {
-  // Get coordinates relative to the canvas.
-  var clickLocX = event.offsetX;
-  var clickLocY = event.offsetY;
-  // Convert to clipspace coordinates.
-  x = 2*clickLocX/512.0 - 1;
-  y = -(2*clickLocY/512.0 - 1);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(flatz.foot), gl.STATIC_DRAW);
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  gl.uniform4f(color, 0.9, 0.9, 0.9, 1.0);
+  gl.drawArrays( gl.TRIANGLE_FAN, 0, flatz.foot.length);
 }
 
 function updateKeyInfo() {
   if (keyMapping[38] || keyMapping[87]) {
-    flatzTheta = 0;
-    if (flatzY < 1)
-      flatzY += 0.005;
+    flatz.theta = 0;
+    if (flatz.y < 1)
+      flatz.y += 0.015;
   }
   if (keyMapping[40] || keyMapping[83]) {
-    flatzTheta = Math.PI;
-    if (flatzY > -1)
-      flatzY -= 0.005;
+    flatz.theta = Math.PI;
+    if (flatz.y > -1)
+      flatz.y -= 0.015;
   }
   if (keyMapping[39] || keyMapping[68]) {
-    flatzTheta = -Math.PI/2;
-    if (flatzX < 1)
-      flatzX += 0.005;
+    flatz.theta = Math.PI/2;
+    if (flatz.x < 1)
+      flatz.x += 0.015;
   }
   if (keyMapping[37] || keyMapping[65]) {
-    flatzTheta = Math.PI/2;
-    if (flatzX > -1)
-      flatzX -= 0.005;
+    flatz.theta = -Math.PI/2;
+    if (flatz.x > -1)
+      flatz.x -= 0.015;
   }
   if ((keyMapping[38] || keyMapping[87]) && (keyMapping[39] || keyMapping[68]))
-    flatzTheta = Math.PI/4;
+    flatz.theta = Math.PI/4;
   if ((keyMapping[38] || keyMapping[87]) && (keyMapping[37] || keyMapping[65]))
-    flatzTheta = -Math.PI/4;
+    flatz.theta = -Math.PI/4;
   if ((keyMapping[40] || keyMapping[83]) && (keyMapping[39] || keyMapping[68]))
-    flatzTheta = 3*Math.PI/4;
+    flatz.theta = 3*Math.PI/4;
   if ((keyMapping[40] || keyMapping[83]) && (keyMapping[37] || keyMapping[65]))
-    flatzTheta = -3*Math.PI/4;
+    flatz.theta = -3*Math.PI/4;
 }
 
 /* Changes the direction of movement */
@@ -145,27 +174,28 @@ function keyUp(evemt) {
       keyMapping[key] = false;
 }
 
-/* Increases the movement speed */
-function increaseSpeed() {
-  if (stepScale < 10) {
-    stepScale += 0.5;
-  }
-}
-
-/* Decreases the movement speed */
-function decreaseSpeed() {
-  if (stepScale > 0) {
-    stepScale -= 0.5;
-  }
-}
-
 /* Returns an array of vertices */
-function getVertices() {
+function getFlatzBodyVertices() {
   var vertices = [];
   vertices.push(vec2(0.05, -0.016));
   vertices.push(vec2(0.05, 0.016));
   vertices.push(vec2(-0.05, 0.016));
   vertices.push(vec2(-0.05, -0.016));
-
+  return vertices;
+}
+function getFlatzlegVertices() {
+  var vertices = [];
+  vertices.push(vec2(0.025, -0.04));
+  vertices.push(vec2(0.025, -0.016));
+  vertices.push(vec2(-0.025, -0.016));
+  vertices.push(vec2(-0.025, -0.04));
+  return vertices;
+}
+function getFlatzFootVertices() {
+  var vertices = [];
+  vertices.push(vec2(0.05, -0.04));
+  vertices.push(vec2(0.05, -0.056));
+  vertices.push(vec2(-0.05, -0.04));
+  vertices.push(vec2(-0.05, -0.056));
   return vertices;
 }
