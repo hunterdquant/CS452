@@ -10,6 +10,7 @@ var shaderProgram;
 var arrayOfVertices;
 var flatz;
 var bubbles;
+var bubbleBomb;
 var keyMapping;
 var scoreText;
 var timeText;
@@ -35,6 +36,7 @@ function init() {
   playing = false;
   initFlatz();
   bubbles = [];
+  bubbleBomb = null;
   keyMapping = {};
 
   initBuffer();
@@ -60,9 +62,18 @@ function gameLoop() {
     updateKeyInfo();
     var radius = Math.random();
     if (radius < 0.1)
-      generatebubble(radius);
+      generateBubble(radius);
+    if (radius < 0.005 && bubbleBomb === null)
+      generateBubbleBomb();
     drawFlatz();
-    drawBubblesAndCheckCollision();
+    for (var i = bubbles.length - 1; i >= 0; i--) {
+      handleBubbleCollision(bubbles[i]);
+      drawBubble(bubbles[i], i);
+    }
+    if (bubbleBomb !== null) {
+      handleBubbleBombCollision();
+      drawBubbleBomb();
+    }
   }
   requestAnimFrame(gameLoop);
 }
@@ -73,6 +84,7 @@ function startNew() {
   initFlatz();
   bubbles = [];
   keyMapping = {};
+  bubbleBomb = null;
   scoreText.innerHTML = "Score: 0";
   timeText.innerHTML = "time: 0.0";
   timeRemaining = timer(time);
@@ -89,11 +101,30 @@ function checkGameTime() {
 }
 
 function updateScore(bubble) {
-  score += (1000*bubble.getRadius());
+  score += (1000*bubble.getArea());
   scoreText.innerHTML = "Score: " + Math.floor(score);
 }
 
-function generatebubble(r) {
+function generateBubbleBomb() {
+  var v = [];
+  var n = 64;
+  var r = 0.05;
+  var step = 2*Math.PI/n;
+  for (var i = 0; i < n; i++) {
+    v.push(vec2(r*Math.cos(i*step), r*Math.sin(i*step)));
+  }
+  bubbleBomb = {
+    vertices: v,
+    radius: r,
+    scale: 1,
+    x: (Math.random() > .5) ? -1*Math.random() : Math.random(),
+    y: 1.25,
+    step: 0.1,
+    exploding: false
+  };
+}
+
+function generateBubble(r) {
   var v = [];
   var n = 16;
   var step = 2*Math.PI/n;
@@ -111,8 +142,8 @@ function generatebubble(r) {
     blueValue: Math.random()*0.5 + 0.5,
     greenValue: Math.random()
   };
-  bubble.getRadius = function () {
-    return 2*Math.PI*this.radius*this.radius;
+  bubble.getArea = function () {
+    return 2*Math.PI*Math.pow(this.radius, 2);
   }
   bubbles.push(bubble);
 }
@@ -132,35 +163,64 @@ function initBuffer() {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
 }
 
-function drawBubblesAndCheckCollision() {
-  var color = gl.getUniformLocation(shaderProgram, "color");
-  for (var i = bubbles.length - 1; i >= 0; i--) {
-    var bubble = bubbles[i];
-    if (bubble.y > 1.25) {
-      bubbles.splice(i, 1);
-      continue;
-    }
-    if (!bubble.popped && Math.abs(bubble.x - flatz.x) <= bubble.radius + 0.05 && Math.abs(bubble.y - flatz.y) <= bubble.radius + 0.016) {
+function handleBubbleCollision(bubble) {
+  if (!bubble.popped && Math.abs(bubble.x - flatz.x) <= bubble.radius + 0.05 && Math.abs(bubble.y - flatz.y) <= bubble.radius + 0.016) {
+    updateScore(bubble);
+    bubble.popped = true;
+  }
+  if (bubbleBomb !== null && bubbleBomb.exploding && !bubble.popped) {
+    if (Math.pow(bubble.x - bubbleBomb.x, 2) + Math.pow(bubble.y - bubbleBomb.y, 2) <= Math.pow(bubbleBomb.scale*bubbleBomb.radius, 2)) {
       updateScore(bubble);
       bubble.popped = true;
     }
-    bubble.y += bubble.step;
-    var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, bubble.x, bubble.y, 1.0];
-    var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
-    gl.uniformMatrix3fv(matrixLoc, false, matrix);
-    gl.uniform4f(color, 0.0, bubble.greenValue, bubble.blueValue, 1.0);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(bubble.vertices), gl.STATIC_DRAW);
-    if (bubble.popped) {
+  }
+}
 
-      gl.lineWidth(2);
-      gl.drawArrays( gl.LINES, 0, bubble.vertices.length);
-      bubble.framesTillGone--;
-      if (bubble.framesTillGone <= 0) {
-        bubbles.splice(i, 1);
-      }
-    } else {
-      gl.drawArrays( gl.TRIANGLE_FAN, 0, bubble.vertices.length);
+function handleBubbleBombCollision() {
+  if (!bubbleBomb.exploding && Math.abs(bubbleBomb.x - flatz.x) <= bubbleBomb.scale*bubbleBomb.radius + 0.05 && Math.abs(bubbleBomb.y - flatz.y) <= bubbleBomb.scale*bubbleBomb.radius + 0.016) {
+    bubbleBomb.exploding = true;
+  }
+}
+
+function drawBubble(bubble, bubbleIndex) {
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  if (bubble.y > 1.25) {
+    bubbles.splice(bubbleIndex, 1);
+    return;
+  }
+  bubble.y += bubble.step;
+  var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, bubble.x, bubble.y, 1.0];
+  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+  gl.uniformMatrix3fv(matrixLoc, false, matrix);
+  gl.uniform4f(color, 0.0, bubble.greenValue, bubble.blueValue, 1.0);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(bubble.vertices), gl.STATIC_DRAW);
+  if (bubble.popped) {
+    gl.lineWidth(2);
+    gl.drawArrays( gl.LINES, 0, bubble.vertices.length);
+    bubble.framesTillGone--;
+    if (bubble.framesTillGone <= 0) {
+      bubbles.splice(bubbleIndex, 1);
     }
+  } else {
+    gl.drawArrays( gl.TRIANGLE_FAN, 0, bubble.vertices.length);
+  }
+}
+
+function drawBubbleBomb() {
+  gl.lineWidth(2);
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  bubbleBomb.y -= bubbleBomb.step/10;
+  if (bubbleBomb.exploding) {
+    bubbleBomb.scale += 10*bubbleBomb.step;
+  }
+  var matrix = [bubbleBomb.scale, 0.0, 0.0, 0.0, bubbleBomb.scale, 0.0, bubbleBomb.x, bubbleBomb.y, 1.0];
+  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+  gl.uniformMatrix3fv(matrixLoc, false, matrix);
+  gl.uniform4f(color, 1.0, 1.0, 0.0, 1.0);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(bubbleBomb.vertices), gl.STATIC_DRAW);
+  gl.drawArrays(gl.LINE_LOOP, 0, bubbleBomb.vertices.length);
+  if (bubbleBomb.radius*bubbleBomb.scale >= 4 || (!bubbleBomb.exploding && bubbleBomb.y <= -1.25)) {
+    bubbleBomb = null;
   }
 }
 
