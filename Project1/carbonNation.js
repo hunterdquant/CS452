@@ -81,9 +81,9 @@ function startNew() {
 
 function checkGameTime() {
   var timeLeft = timeRemaining();
-  timeText.innerHTML = "Time Remaining: " + timeLeft/1000;
+  timeText.innerHTML = "Time: " + timeLeft/1000;
   if (timeLeft <= 0) {
-    timeText.innerHTML = "Time Remaining: " + 0;
+    timeText.innerHTML = "Time: " + 0;
     playing = false;
   }
 }
