@@ -334,7 +334,10 @@ function drawBubbleBomb() {
   }
 }
 
+/* Changes position and rotation of Flatz based on the state of key presses */
 function updateKeyInfo() {
+
+  // Change pos and set rotation
   if (keyMapping[38] || keyMapping[87]) {
     flatz.theta = 0;
     if (flatz.y < 1)
@@ -355,6 +358,8 @@ function updateKeyInfo() {
     if (flatz.x > -1)
       flatz.x -= 0.015;
   }
+
+  // Angles for multiple key presses
   if ((keyMapping[38] || keyMapping[87]) && (keyMapping[39] || keyMapping[68]))
     flatz.theta = Math.PI/4;
   if ((keyMapping[38] || keyMapping[87]) && (keyMapping[37] || keyMapping[65]))
@@ -365,7 +370,7 @@ function updateKeyInfo() {
     flatz.theta = -3*Math.PI/4;
 }
 
-/* Changes the direction of movement */
+/* Flags keys for press state */
 function keyDown(evemt) {
   var key = event.keyCode;
   if (key === 38 || key === 39 || key === 40 || key === 37 ||
@@ -373,6 +378,7 @@ function keyDown(evemt) {
     keyMapping[key] = true;
 }
 
+/* Flags keys for press state */
 function keyUp(evemt) {
   var key = event.keyCode;
   if (key === 38 || key === 39 || key === 40 || key === 37 ||
