@@ -17,6 +17,8 @@ var bubbleBomb;
 var keyMapping;
 // HTML elements to display information
 var scoreText;
+var score;
+var scoreMultiplier;
 var timeText;
 // The base time value
 var time;
@@ -33,6 +35,7 @@ function init() {
   timeText = document.getElementById("time");
   // Set initial score and time values
   score = 0;
+  scoreMultiplier = 1;
   time = 60000;
 
   // Init webgl and specify clipspace.
@@ -54,6 +57,7 @@ function init() {
   bubbles = [];
   // Set bomb initially to null
   bubbleBomb = null;
+  dangerBlocks = [];
 
   // Create keymap object
   keyMapping = {};
@@ -84,11 +88,15 @@ function gameLoop() {
     var radius = Math.random();
 
     // If the radius is small enough generate a bubble
-    if (radius < 0.1)
-      generateBubble(radius);
+    if (radius < 0.25)
+      generateBubble(radius/2);
     // If the generated radiues is very small and there is not currently a bomb, generate a bomb.
-    if (radius < 0.0025 && bubbleBomb === null)
+    if (radius < 0.0015 && bubbleBomb === null)
       generateBubbleBomb();
+    if (radius < 0.02) {
+      generateDangerBlock();
+    }
+
 
     // Draw the character
     drawFlatz();
@@ -103,6 +111,11 @@ function gameLoop() {
     if (bubbleBomb !== null) {
       handleBubbleBombCollision();
       drawBubbleBomb();
+    }
+
+    for (var i = dangerBlocks.length - 1; i >= 0; i--) {
+      handleDangerBlockCollision(dangerBlocks[i]);
+      drawDangerBlock(dangerBlocks[i], i);
     }
   }
 
@@ -120,6 +133,7 @@ function startNew() {
 
   initFlatz();
   bubbles = [];
+  dangerBlocks = [];
   keyMapping = {};
   bubbleBomb = null;
 
@@ -156,10 +170,16 @@ function handleBubbleBombCollision() {
   }
 }
 
+function handleDangerBlockCollision(dangerBlock) {
+  if (Math.abs(dangerBlock.x - flatz.x) < .125 && Math.abs(dangerBlock.y - flatz.y) < .225) {
+    playing = false;
+  }
+}
+
 /* Updates the score with the area of the passed bubble */
 function updateScore(bubble) {
   // Add the value of the popped bubble to the score
-  score += (1000*bubble.getArea());
+  score += (scoreMultiplier*1000*bubble.getArea());
   // Update the HTML
   scoreText.innerHTML = "Score: " + Math.floor(score);
 }
@@ -229,6 +249,23 @@ function generateBubbleBomb() {
     step: 0.1,
     exploding: false
   };
+}
+
+function generateDangerBlock() {
+  var v = [];
+  v.push(vec2(0.1, 0.2));
+  v.push(vec2(-0.1, 0.2));
+  v.push(vec2(-0.1,-0.2));
+  v.push(vec2(0.1,-0.2));
+  var direction = (Math.random() > .5) ? -1 : 1;
+  dangerBlock = {
+    vertices: v,
+    x: direction*1.25,
+    y: (Math.random() > .5) ? -1*Math.random() : Math.random(),
+    step: direction*0.015
+  };
+
+  dangerBlocks.push(dangerBlock);
 }
 
 /* Draws Flatz */
@@ -334,6 +371,31 @@ function drawBubbleBomb() {
   }
 }
 
+function drawDangerBlock(dangerBlock, dangerBlockIndex) {
+  // If the bubble has reached the top of the screen remove it
+  if (dangerBlock.x > 1.25 || dangerBlock.x < -1.25) {
+    dangerBlocks.splice(dangerBlockIndex, 1);
+    return;
+  }
+
+  // Increase it's y position
+  dangerBlock.x += (dangerBlock.direction === -1) ? dangerBlock.step : -dangerBlock.step;
+
+  // Translation matrix for the bubble
+  var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0,dangerBlock.x, dangerBlock.y, 1.0];
+  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+  gl.uniformMatrix3fv(matrixLoc, false, matrix);
+
+  // Set bubble color
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  gl.uniform4f(color, 0.0, 0.0, 0.0, 1.0);
+
+  gl.lineWidth(4);
+  // Buffer dangerBlock vertices and draw
+  gl.bufferData(gl.ARRAY_BUFFER, flatten(dangerBlock.vertices), gl.STATIC_DRAW);
+  gl.drawArrays( gl.LINE_LOOP, 0, dangerBlock.vertices.length);
+}
+
 /* Changes position and rotation of Flatz based on the state of key presses */
 function updateKeyInfo() {
 
@@ -432,6 +494,7 @@ function timer(time) {
 /* Updates HTML with time id and changes game state if there is no time remaining */
 function checkGameTime() {
   var timeLeft = timeRemaining();
+  scoreMultiplier = 1 + Math.floor(time/1000 - timeLeft/1000);
   timeText.innerHTML = "Time: " + timeLeft/1000;
   if (timeLeft <= 0) {
     timeText.innerHTML = "Time: " + 0;
