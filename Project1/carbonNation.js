@@ -120,8 +120,10 @@ function gameLoop() {
 
     for (var i = dangerBlocks.length - 1; i >= 0; i--) {
       handleDangerBlockCollision(dangerBlocks[i]);
-      drawDangerBlock(dangerBlocks[i], i);
-      updateDangerBlock(dangerBlocks[i], i)
+      if (playing) {
+        drawDangerBlock(dangerBlocks[i], i);
+        updateDangerBlock(dangerBlocks[i], i);
+      }
     }
   }
 
@@ -412,7 +414,7 @@ function drawBubbleBomb() {
 function drawDangerBlock(dangerBlock) {
 
   // Translation matrix for the bubble
-  var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0,dangerBlock.x, dangerBlock.y, 1.0];
+  var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, dangerBlock.x, dangerBlock.y, 1.0];
   var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
   gl.uniformMatrix3fv(matrixLoc, false, matrix);
 
