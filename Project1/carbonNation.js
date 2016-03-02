@@ -28,7 +28,7 @@ var time;
 var timeRemaining;
 // Boolean for playstate
 var playing;
-
+// Boolean for if the player has game overed.
 /* Initializes WebGL and globals */
 function init() {
 
@@ -51,6 +51,7 @@ function init() {
 
   // Set initial play state
   playing = false;
+  gameOver = false;
 
   // Initiale character
   initFlatz();
@@ -125,8 +126,13 @@ function gameLoop() {
         updateDangerBlock(dangerBlocks[i], i);
       }
     }
+    if (gameOver) {
+      resetGlobals();
+    }
   }
-
+  if (gameOver) {
+    drawX();
+  }
   // Update frame
   requestAnimFrame(gameLoop);
 }
@@ -134,7 +140,9 @@ function gameLoop() {
 /* Resets game upon the press of a button */
 function startNew() {
   resetGlobals();
-
+  scoreText.innerHTML = "Score: 0";
+  timeText.innerHTML = "time: 0";
+  gameOver = false;
   // Reset timer
   timeRemaining = timer(time);
   // Change play state
@@ -144,11 +152,8 @@ function startNew() {
 /* resets globals on lose and game start */
 function resetGlobals() {
   // Reset all globals
-  scoreText.innerHTML = "Score: 0";
-  timeText.innerHTML = "time: 0";
   score = 0;
   time = 60000;
-
   initFlatz();
   bubbles = [];
   dangerBlocks = [];
@@ -185,7 +190,7 @@ function handleBubbleBombCollision() {
 
 function handleDangerBlockCollision(dangerBlock) {
   if (Math.abs(dangerBlock.x - flatz.x) < .125 && Math.abs(dangerBlock.y - flatz.y) < .225) {
-    resetGlobals();
+    gameOver = true;
     playing = false;
   }
 }
@@ -426,6 +431,19 @@ function drawDangerBlock(dangerBlock) {
   // Buffer dangerBlock vertices and draw
   gl.bufferData(gl.ARRAY_BUFFER, flatten(dangerBlock.vertices), gl.STATIC_DRAW);
   gl.drawArrays( gl.LINE_LOOP, 0, dangerBlock.vertices.length);
+}
+
+function drawX() {
+  var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0];
+  var matrixLoc = gl.getUniformLocation(shaderProgram, "M");
+  gl.uniformMatrix3fv(matrixLoc, false, matrix);
+  var color = gl.getUniformLocation(shaderProgram, "color");
+  gl.uniform4f(color, 1.0, 0.0, 0.0, 1.0);
+  gl.lineWidth(10);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten([vec2(1.0, 1.0), vec2(-1.0, -1.0)]), gl.STATIC_DRAW);
+  gl.drawArrays(gl.LINES, 0, 2);
+  gl.bufferData(gl.ARRAY_BUFFER, flatten([vec2(-1.0, 1.0), vec2(1.0, -1.0)]), gl.STATIC_DRAW);
+  gl.drawArrays(gl.LINES, 0, 2);
 }
 
 /* Changes position and rotation of Flatz based on the state of key presses */
