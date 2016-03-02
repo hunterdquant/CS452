@@ -433,7 +433,7 @@ function updateKeyInfo() {
 }
 
 /* Flags keys for press state */
-function keyDown(evemt) {
+function keyDown(event) {
   var key = event.keyCode;
   if (key === 38 || key === 39 || key === 40 || key === 37 ||
       key === 87 || key === 83 || key === 65 || key === 68)
@@ -441,7 +441,7 @@ function keyDown(evemt) {
 }
 
 /* Flags keys for press state */
-function keyUp(evemt) {
+function keyUp(event) {
   var key = event.keyCode;
   if (key === 38 || key === 39 || key === 40 || key === 37 ||
       key === 87 || key === 83 || key === 65 || key === 68)
