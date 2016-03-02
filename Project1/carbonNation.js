@@ -17,9 +17,11 @@ var bubbleBomb;
 var keyMapping;
 // HTML elements to display information
 var scoreText;
-var score;
-var scoreMultiplier;
 var timeText;
+// Current score
+var score;
+// Score multiplier
+var scoreMultiplier;
 // The base time value
 var time;
 // Callback function that returns the remaining time
@@ -75,6 +77,7 @@ function init() {
 
 /* Continuously loops for the duration of the play session */
 function gameLoop() {
+
   // Clear drawn elements
   gl.clear(gl.COLOR_BUFFER_BIT);
   // Execute game logic if playing
@@ -103,19 +106,22 @@ function gameLoop() {
 
     // Handle collision and draw each bubble
     for (var i = bubbles.length - 1; i >= 0; i--) {
-      handleBubbleCollision(bubbles[i]);
-      drawBubble(bubbles[i], i);
+      //handleBubbleCollision(bubbles[i]);
+      drawBubble(bubbles[i]);
+      updateBubble(bubbles[i], i);
     }
 
     // If the bomb exists handle its collision and draw it
     if (bubbleBomb !== null) {
-      handleBubbleBombCollision();
+      //handleBubbleBombCollision();
       drawBubbleBomb();
+      updateBubbleBomb();
     }
 
     for (var i = dangerBlocks.length - 1; i >= 0; i--) {
-      handleDangerBlockCollision(dangerBlocks[i]);
+      //handleDangerBlockCollision(dangerBlocks[i]);
       drawDangerBlock(dangerBlocks[i], i);
+      updateDangerBlock(dangerBlocks[i], i)
     }
   }
 
@@ -125,6 +131,16 @@ function gameLoop() {
 
 /* Resets game upon the press of a button */
 function startNew() {
+  resetGlobals();
+
+  // Reset timer
+  timeRemaining = timer(time);
+  // Change play state
+  playing = true;
+}
+
+/* resets globals on lose and game start */
+function resetGlobals() {
   // Reset all globals
   scoreText.innerHTML = "Score: 0";
   timeText.innerHTML = "time: 0";
@@ -136,11 +152,6 @@ function startNew() {
   dangerBlocks = [];
   keyMapping = {};
   bubbleBomb = null;
-
-  // Reset timer
-  timeRemaining = timer(time);
-  // Change play state
-  playing = true;
 }
 
 /* Checks if another object is colliding with a bubble */
@@ -172,6 +183,7 @@ function handleBubbleBombCollision() {
 
 function handleDangerBlockCollision(dangerBlock) {
   if (Math.abs(dangerBlock.x - flatz.x) < .125 && Math.abs(dangerBlock.y - flatz.y) < .225) {
+    resetGlobals();
     playing = false;
   }
 }
@@ -251,12 +263,15 @@ function generateBubbleBomb() {
   };
 }
 
+/* generates a danger block and adds it to the list of danger blocks */
 function generateDangerBlock() {
   var v = [];
   v.push(vec2(0.1, 0.2));
   v.push(vec2(-0.1, 0.2));
   v.push(vec2(-0.1,-0.2));
   v.push(vec2(0.1,-0.2));
+
+  // To determine which side the block comes from.
   var direction = (Math.random() > .5) ? -1 : 1;
   dangerBlock = {
     vertices: v,
@@ -266,6 +281,51 @@ function generateDangerBlock() {
   };
 
   dangerBlocks.push(dangerBlock);
+}
+
+/* updates bubble position and removes it if necessary */
+function updateBubble(bubble, bubbleIndex) {
+  // If the bubble has reached the top of the screen remove it
+  if (bubble.y > 1.25) {
+    bubbles.splice(bubbleIndex, 1);
+    return;
+  }
+
+  // Increase it's y position
+  bubble.y += bubble.step;
+  if (bubble.popped) {
+    bubble.framesTillGone--;
+  }
+  // Remove the bubble after all its popped frames are gone
+  if (bubble.framesTillGone <= 0) {
+    bubbles.splice(bubbleIndex, 1);
+  }
+}
+
+/* updates bubble bomb position and removes it if necessary */
+function updateBubbleBomb() {
+  bubbleBomb.y -= bubbleBomb.step/10;
+  // If it's exploding then scale for shockwave
+  if (bubbleBomb.exploding) {
+    bubbleBomb.scale += 10*bubbleBomb.step;
+  }
+
+  // If the bomb has reached it's peak blast size or it's below the window then remove it.
+  if (bubbleBomb.radius*bubbleBomb.scale >= 4 || (!bubbleBomb.exploding && bubbleBomb.y <= -1.25)) {
+    bubbleBomb = null;
+  }
+}
+
+/* updates danger block and removes it if necessary */
+function updateDangerBlock(dangerBlock, dangerBlockIndex) {
+  // If the bubble has reached the top of the screen remove it
+  if (dangerBlock.x > 1.25 || dangerBlock.x < -1.25) {
+    dangerBlocks.splice(dangerBlockIndex, 1);
+    return;
+  }
+
+  // Increase its y position
+  dangerBlock.x += (dangerBlock.direction === -1) ? dangerBlock.step : -dangerBlock.step;
 }
 
 /* Draws Flatz */
@@ -303,15 +363,7 @@ function drawFlatz() {
 }
 
 /* Draws the passed bubble and removes if if it's popped*/
-function drawBubble(bubble, bubbleIndex) {
-  // If the bubble has reached the top of the screen remove it
-  if (bubble.y > 1.25) {
-    bubbles.splice(bubbleIndex, 1);
-    return;
-  }
-
-  // Increase it's y position
-  bubble.y += bubble.step;
+function drawBubble(bubble) {
 
   // Translation matrix for the bubble
   var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, bubble.x, bubble.y, 1.0];
@@ -330,11 +382,6 @@ function drawBubble(bubble, bubbleIndex) {
     gl.lineWidth(2);
     // Draw using lines to get popped look
     gl.drawArrays( gl.LINES, 0, bubble.vertices.length);
-    bubble.framesTillGone--;
-    // Remove the bubble after all its popped frames are gone
-    if (bubble.framesTillGone <= 0) {
-      bubbles.splice(bubbleIndex, 1);
-    }
   } else {
     // If it's not popped draw the filled circle
     gl.drawArrays( gl.TRIANGLE_FAN, 0, bubble.vertices.length);
@@ -343,11 +390,6 @@ function drawBubble(bubble, bubbleIndex) {
 
 /* Draws the bubble bomb */
 function drawBubbleBomb() {
-  bubbleBomb.y -= bubbleBomb.step/10;
-  // If it's exploding then scale for shockwave
-  if (bubbleBomb.exploding) {
-    bubbleBomb.scale += 10*bubbleBomb.step;
-  }
 
   // Set the bomb color to yellow
   var color = gl.getUniformLocation(shaderProgram, "color");
@@ -364,22 +406,10 @@ function drawBubbleBomb() {
   // Draw the bomb vertices
   gl.lineWidth(2);
   gl.drawArrays(gl.LINE_LOOP, 0, bubbleBomb.vertices.length);
-
-  // If the bomb has reached it's peak blast size or it's below the window then remove it.
-  if (bubbleBomb.radius*bubbleBomb.scale >= 4 || (!bubbleBomb.exploding && bubbleBomb.y <= -1.25)) {
-    bubbleBomb = null;
-  }
 }
 
-function drawDangerBlock(dangerBlock, dangerBlockIndex) {
-  // If the bubble has reached the top of the screen remove it
-  if (dangerBlock.x > 1.25 || dangerBlock.x < -1.25) {
-    dangerBlocks.splice(dangerBlockIndex, 1);
-    return;
-  }
-
-  // Increase it's y position
-  dangerBlock.x += (dangerBlock.direction === -1) ? dangerBlock.step : -dangerBlock.step;
+/* Draws a danger block */
+function drawDangerBlock(dangerBlock) {
 
   // Translation matrix for the bubble
   var matrix = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0,dangerBlock.x, dangerBlock.y, 1.0];
@@ -498,6 +528,7 @@ function checkGameTime() {
   timeText.innerHTML = "Time: " + timeLeft/1000;
   if (timeLeft <= 0) {
     timeText.innerHTML = "Time: " + 0;
+    resetGlobals();
     playing = false;
   }
 }

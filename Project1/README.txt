@@ -1,27 +1,35 @@
 First and Last Name
   Hunter Quant
 Date
-  02/15/2016
+  03/02/2016
 
 Description of implementation
 
   Globals will be referenced through description.
-    /* Define globals */
+
     var gl;
     var shaderProgram;
-    var arrayOfVertices;
-    // Rotation value
-    var theta;
-    // Displacement values
-    var x, y;
-    // Displacement step values
-    var xStep, yStep;
-    // Displacement step scale value
-    var stepScale;
-    // Rotation flag
-    var isRotating;
-    // Base step value
-    var baseStep;
+    // Main character
+    var flatz;
+    // Array of bubbles
+    var bubbles;
+    // Bubble bomb object
+    var bubbleBomb;
+    // Key mapping object for multiple input keys
+    var keyMapping;
+    // HTML elements to display information
+    var scoreText;
+    var timeText;
+    // Current score
+    var score;
+    // Score multiplier
+    var scoreMultiplier;
+    // The base time value
+    var time;
+    // Callback function that returns the remaining time
+    var timeRemaining;
+    // Boolean for playstate
+    var playing;
 
   The program starts with the initialization of our components: WebGL, canvas, globals, and attributes. Next,
   the program starts its animation by calling the render function with an interval of 1 millisecond. The render function
