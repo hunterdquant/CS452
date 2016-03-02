@@ -106,20 +106,20 @@ function gameLoop() {
 
     // Handle collision and draw each bubble
     for (var i = bubbles.length - 1; i >= 0; i--) {
-      //handleBubbleCollision(bubbles[i]);
+      handleBubbleCollision(bubbles[i]);
       drawBubble(bubbles[i]);
       updateBubble(bubbles[i], i);
     }
 
     // If the bomb exists handle its collision and draw it
     if (bubbleBomb !== null) {
-      //handleBubbleBombCollision();
+      handleBubbleBombCollision();
       drawBubbleBomb();
       updateBubbleBomb();
     }
 
     for (var i = dangerBlocks.length - 1; i >= 0; i--) {
-      //handleDangerBlockCollision(dangerBlocks[i]);
+      handleDangerBlockCollision(dangerBlocks[i]);
       drawDangerBlock(dangerBlocks[i], i);
       updateDangerBlock(dangerBlocks[i], i)
     }
