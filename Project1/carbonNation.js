@@ -1,7 +1,7 @@
 /*
   Name: Hunter Quant
   Course: CS452
-  Lab: 2
+  Project: 1
 */
 
 /* Define globals */
@@ -105,7 +105,7 @@ function gameLoop() {
     // Draw the character
     drawFlatz();
 
-    // Handle collision and draw each bubble
+    // Handle collision, draw, and update each bubble
     for (var i = bubbles.length - 1; i >= 0; i--) {
       handleBubbleCollision(bubbles[i]);
       drawBubble(bubbles[i]);
@@ -118,18 +118,18 @@ function gameLoop() {
       drawBubbleBomb();
       updateBubbleBomb();
     }
-
+    // Handle collision, draw, and update each danger block
     for (var i = dangerBlocks.length - 1; i >= 0; i--) {
       handleDangerBlockCollision(dangerBlocks[i]);
-      if (playing) {
-        drawDangerBlock(dangerBlocks[i], i);
-        updateDangerBlock(dangerBlocks[i], i);
-      }
+      drawDangerBlock(dangerBlocks[i], i);
+      updateDangerBlock(dangerBlocks[i], i);
     }
+    // Gameover happened this frame them reset the globals.
     if (gameOver) {
       resetGlobals();
     }
   }
+  // If it's game over draw a red X
   if (gameOver) {
     drawX();
   }

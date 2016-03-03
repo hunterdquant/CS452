@@ -3,8 +3,9 @@
   <head>
     <meta charset="utf-8">
     <title>Carbon Nation</title>
-  <link href='https://fonts.googleapis.com/css?family=Francois+One' rel='stylesheet' type='text/css'>    <style media="screen">
-    html {
+    <link href='https://fonts.googleapis.com/css?family=Francois+One' rel='stylesheet' type='text/css'>
+    <style media="screen">
+      html {
         background-color: slategray;
         font-family: "Francois One";
       }
@@ -61,6 +62,10 @@
         font-size: 2em;
       }
 
+      #play p {
+        text-align: center;
+      }
+
     </style>
     <script id="vertex-shader" type="x-shader/x-vertex">
       attribute vec4 myPosition;
@@ -103,6 +108,9 @@
           <h3 id="time">Time: 0</h3>
         </div>
         <button  onclick="startNew()">Start New Game</button>
+        <p>
+          Use WASD or the arrow keys to play!
+        </p>
         <a href="carbonNationStory.html">Discover!</a>
       </div>
   </body>
