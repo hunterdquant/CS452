@@ -4,6 +4,12 @@
   Lab: 2
 */
 
+/*
+"Voice Over Under" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 3.0 License
+http://creativecommons.org/licenses/by/3.0/
+*/
+
 /* Define globals */
 var gl;
 var shaderProgram;
@@ -29,6 +35,10 @@ var timeRemaining;
 // Boolean for playstate
 var playing;
 // Boolean for if the player has game overed.
+var gameOver;
+// Game music
+var song;
+
 /* Initializes WebGL and globals */
 function init() {
 
@@ -52,6 +62,8 @@ function init() {
   // Set initial play state
   playing = false;
   gameOver = false;
+
+  song = new Audio("VoiceOverUnder.mp3");
 
   // Initiale character
   initFlatz();
@@ -128,6 +140,7 @@ function gameLoop() {
     }
     if (gameOver) {
       resetGlobals();
+      song.pause();
     }
   }
   if (gameOver) {
@@ -141,8 +154,10 @@ function gameLoop() {
 function startNew() {
   resetGlobals();
   scoreText.innerHTML = "Score: 0";
-  timeText.innerHTML = "time: 0";
+  timeText.innerHTML = "Time: 0";
   gameOver = false;
+  song.currentTime = 0;
+  song.play();
   // Reset timer
   timeRemaining = timer(time);
   // Change play state

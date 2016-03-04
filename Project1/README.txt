@@ -84,3 +84,8 @@ Description of implementation
     I won't get too much into the implementation beyond the game loop, because
     it would be long winded. If you want more specific details on function
     implementation the code is fairly well documented.
+
+Credits
+  "Voice Over Under" Kevin MacLeod (incompetech.com)
+  Licensed under Creative Commons: By Attribution 3.0 License
+  http://creativecommons.org/licenses/by/3.0/
