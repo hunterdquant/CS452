@@ -22,9 +22,10 @@
         padding: 0;
         border: 2px solid black;
       }
-      #score-box {
+      .box {
         font-size: 32px;
         margin-left: 8px;
+        margin-bottom: 10px;
         color: white;
         background-color: #333;
         display: inline-block;
@@ -32,21 +33,7 @@
         border: 2px solid black;
         border-radius: 5px;
       }
-      #time-box {
-        font-size: 32px;
-        margin-left: 8px;
-        color: white;
-        background-color: #333;
-        display: inline-block;
-        width: 240px;
-        border: 2px solid black;
-        border-radius: 5px;
-      }
-      #score {
-        margin: 0 auto 0 5px;
-        padding: 0;
-      }
-      #time {
+      #score, #time, #high, #pop {
         margin: 0 auto 0 5px;
         padding: 0;
       }
@@ -99,11 +86,17 @@
       <div id="play">
         <canvas id="gl-canvas" width="512" height="512">
         </canvas>
-        <div id="score-box">
+        <div id="score-box" class="box">
           <h3 id="score">Score: 0</h3>
         </div>
-        <div id="time-box">
+        <div id="time-box" class="box">
           <h3 id="time">Time: 0</h3>
+        </div>
+        <div id="high-box" class="box">
+          <h3 id="high">High: 0</h3>
+        </div>
+        <div id="pop-box" class="box">
+          <h3 id="pop">Popped: 0</h3>
         </div>
         <button  onclick="startNew()">Start New Game</button>
         <p>

@@ -32,12 +32,18 @@ var keyMapping;
 // HTML elements to display information
 var scoreText;
 var timeText;
+var highText;
+var poppedText;
 // Current score
 var score;
 // Score multiplier
 var scoreMultiplier;
 // The base time value
 var time;
+// The locally saved high Score
+var highScore;
+// The number of popped bubbles
+var popped;
 // Callback function that returns the remaining time
 var timeRemaining;
 // Boolean for playstate
@@ -53,10 +59,20 @@ function init() {
   // Get reference to html elements
   scoreText = document.getElementById("score");
   timeText = document.getElementById("time");
+  highText = document.getElementById("high");
+  poppedText = document.getElementById("pop");
   // Set initial score and time values
   score = 0;
   scoreMultiplier = 1;
   time = 60000;
+  popped = 0;
+
+  if (localStorage.getItem("highScore") === null) {
+    highScore = 0;
+  } else {
+    highScore = localStorage.getItem("highScore");
+  }
+  highText.innerHTML = "High: " + Math.floor(highScore);
 
   // Init webgl and specify clipspace.
   var canvas = document.getElementById("gl-canvas");
@@ -148,7 +164,10 @@ function gameLoop() {
     if (gameOver) {
       resetGlobals();
       song.pause();
+      localStorage.setItem("highScore", highScore);
     }
+
+    poppedText.innerHTML = "Popped: " + popped;
   }
   // If it's game over draw a red X
   if (gameOver) {
@@ -163,6 +182,7 @@ function startNew() {
   resetGlobals();
   scoreText.innerHTML = "Score: 0";
   timeText.innerHTML = "Time: 0";
+  popped = 0;
   gameOver = false;
   song.currentTime = 0;
   song.play();
@@ -195,6 +215,8 @@ function handleBubbleCollision(bubble) {
     var pop = new Audio("Punch_HD-Mark_DiAngelo-1718986183.mp3");
     pop.volume = 10*bubble.getArea();
     pop.play();
+
+    popped++;
   }
   // Check if the bubble is in the blast radius of the bomb if one is exploding
   if (bubbleBomb !== null && bubbleBomb.exploding && !bubble.popped) {
@@ -204,6 +226,8 @@ function handleBubbleCollision(bubble) {
       var pop = new Audio("Punch_HD-Mark_DiAngelo-1718986183.mp3");
       pop.volume = 10*bubble.getArea();
       pop.play();
+
+      popped++;
     }
   }
 }
@@ -231,6 +255,10 @@ function updateScore(bubble) {
   score += (scoreMultiplier*1000*bubble.getArea());
   // Update the HTML
   scoreText.innerHTML = "Score: " + Math.floor(score);
+  if (score > highScore) {
+    highScore = score;
+    highText.innerHTML = "High: " + Math.floor(highScore);
+  }
 }
 
 /* Initializes flatz object */
