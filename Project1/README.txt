@@ -89,3 +89,11 @@ Credits
   "Voice Over Under" Kevin MacLeod (incompetech.com)
   Licensed under Creative Commons: By Attribution 3.0 License
   http://creativecommons.org/licenses/by/3.0/
+
+  "Punch HD" Mark DiAngelo
+  Licensed under Creative Commons: By Attribution 3.0 License
+  http://creativecommons.org/licenses/by/3.0/
+
+  "Beep 2" timtube
+  Licensed under Creative Commons: By Sampling Plus 1.0 License
+  https://creativecommons.org/licenses/sampling+/1.0/
