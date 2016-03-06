@@ -112,7 +112,9 @@ function init() {
   gameLoop();
 }
 
-/* Continuously loops for the duration of the play session */
+/* Continuously loops for the duration of the play session
+   A lot of values in here were chosen based on game balance through play testing
+ */
 function gameLoop() {
 
   // Clear drawn elements
@@ -124,16 +126,16 @@ function gameLoop() {
     // Update displacement values based on key mappings
     updateKeyInfo();
 
-    // Get random radius
-    var radius = Math.random();
+    // Get random radius with min size
+    var radius = Math.random() + 0.05;
 
     // If the radius is small enough generate a bubble
     if (radius < 0.25)
       generateBubble(radius/2);
     // If the generated radiues is very small and there is not currently a bomb, generate a bomb.
-    if (radius < 0.0015 && bubbleBomb === null)
+    if (radius < 0.0515 && bubbleBomb === null)
       generateBubbleBomb();
-    if (radius < 0.02) {
+    if (radius < 0.07) {
       generateDangerBlock();
     }
 
