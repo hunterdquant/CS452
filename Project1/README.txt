@@ -30,16 +30,28 @@ Description of implementation
     // HTML elements to display information
     var scoreText;
     var timeText;
+    var highText;
+    var poppedText;
     // Current score
     var score;
     // Score multiplier
     var scoreMultiplier;
     // The base time value
     var time;
+    // The locally saved high Score
+    var highScore;
+    // The number of popped bubbles
+    var popped;
     // Callback function that returns the remaining time
     var timeRemaining;
-    // Boolean for play state
+    // Boolean for playstate
     var playing;
+    // Boolean for if the player has game overed.
+    var gameOver;
+    // Game music
+    var song;
+
+    DISCLAIMER: I'm not the most proficient in Javascript, so my code might not follow certain standards or be the most efficient.
 
     The game fist initializes all the above globals and then calls the game loop.
 
