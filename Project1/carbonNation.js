@@ -108,6 +108,11 @@ function init() {
   shaderProgram = initShaders(gl, "vertex-shader", "fragment-shader");
   gl.useProgram(shaderProgram);
 
+  // Set myPosition attrib pointer to step through buffer
+  var myPosition = gl.getAttribLocation(shaderProgram, "myPosition");
+  gl.vertexAttribPointer(myPosition, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(myPosition);
+
   // Start game loop
   gameLoop();
 }
@@ -406,11 +411,6 @@ function drawFlatz() {
   // color for body and legs
   var color = gl.getUniformLocation(shaderProgram, "color");
   gl.uniform4f(color, 0.0, 0.9, 0.9, 1.0);
-
-  // Set myPosition attrib pointer to step through buffer
-  var myPosition = gl.getAttribLocation(shaderProgram, "myPosition");
-  gl.vertexAttribPointer(myPosition, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(myPosition);
 
   // Buffer the body vertices and draw
   gl.bufferData(gl.ARRAY_BUFFER, flatten(flatz.body), gl.STATIC_DRAW);
