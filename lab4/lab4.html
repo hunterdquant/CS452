@@ -5,11 +5,41 @@
 <script id="vertex-shader" type="x-shader/x-vertex">
 
     precision mediump float;
+
     attribute vec4 vertexPosition;
+    attribute vec3 nv;
+
+    uniform mat4 M;
+    uniform mat4 P;
+    uniform vec3 Lp0, Lp1;
+    uniform vec3 Ia0, Id0, Is0;
+    uniform vec3 Ia1, Id1, Is1;
+
+    varying vec3 Ia0_pp0, Id0_pp0, Is0_pp0;
+    varying vec3 Ia1_pp0, Id1_pp0, Is1_pp0;
+    varying vec3 i0, i1;
+    varying vec3 v;
+    varying vec3 n;
+
+    mat4 proj = mat4(1.0, 0, 0, 0,
+                     0, 1.0, 0, 0,
+                     0, 0, -1.0, 0,
+                     0, 0, 0, 1);
     void main() {
         gl_PointSize = 1.0;
-        gl_Position = vertexPosition;
-        
+        float L0distance = length(vertexPosition.xyz - Lp0);
+        float L1distance = length(vertexPosition.xyz - Lp1);
+        Ia0_pp0 = Ia0 / (L0distance*L0distance);
+        Id0_pp0 = Id0 / (L0distance*L0distance);
+        Is0_pp0 = Is0 / (L0distance*L0distance);
+        Ia1_pp0 = Ia1 / (L1distance*L1distance);
+        Id1_pp0 = Id1 / (L1distance*L1distance);
+        Is1_pp0 = Is1 / (L1distance*L1distance);
+        i0 = normalize(Lp0 - vertexPosition.xyz);
+        i1 = normalize(Lp1 - vertexPosition.xyz);
+        v = normalize(vec3(0.0, 0.0, 0.0) - vertexPosition.xyz);
+        n = nv;
+        gl_Position = proj * P * M * vertexPosition;
     }
 
 </script>
@@ -17,8 +47,59 @@
 <script id="fragment-shader" type="x-shader/x-fragment">
 
     precision mediump float;
+
+    uniform vec3 ka0, kd0, ks0;
+    uniform vec3 ka1, kd1, ks1;
+    uniform float alpha;
+
+    varying vec3 Ia0_pp0, Id0_pp0, Is0_pp0;
+    varying vec3 Ia1_pp0, Id1_pp0, Is1_pp0;
+    varying vec3 i0, i1;
+    varying vec3 v;
+    varying vec3 n;
     void main() {
-        gl_FragColor = vec4( .8, .8, .8, 1.0 );
+        vec3 i0n, i1n, nn, vn;
+        i0n = normalize(i0);
+        i1n = normalize(i1);
+        nn = normalize(n);
+        vn = normalize(vn);
+
+        vec3 Ra0, Rd0, Rs0, Ra1, Rd1, Rs1;
+
+        Ra0.r = ka0.r*Ia0_pp0.r;
+        Ra1.r = ka1.r*Ia1_pp0.r;
+        Ra0.g = ka0.g*Ia0_pp0.g;
+        Ra1.g = ka1.g*Ia1_pp0.g;
+        Ra0.b = ka0.b*Ia0_pp0.b;
+        Ra1.b = ka1.b*Ia1_pp0.b;
+
+        float costheta0 = dot(i0, n);
+        float costheta1 = dot(i1, n);
+        Rd0.r = ka0.r*Ia0_pp0.r*max(costheta0, 0.0);
+        Rd1.r = ka1.r*Ia1_pp0.r*max(costheta1, 0.0);
+        Rd0.g = ka0.g*Ia0_pp0.g*max(costheta0, 0.0);
+        Rd1.g = ka1.g*Ia1_pp0.g*max(costheta1, 0.0);
+        Rd0.b = ka0.b*Ia0_pp0.b*max(costheta0, 0.0);
+        Rd1.b = ka1.b*Ia1_pp0.b*max(costheta1, 0.0);
+
+        vec3 r0 = normalize(2.0*costheta0*n - i0);
+        vec3 r1 = normalize(2.0*costheta1*n - i1);
+        float cosphi0 = dot(r0, v);
+        float cosphi1 = dot(r1, v);
+        float shiny0 = pow(max(cosphi0, 0.0), alpha);
+        float shiny1 = pow(max(cosphi1, 0.0), alpha);
+        float costhetag0 = floor(0.5*(sign(costheta0)+1.0));
+        float costhetag1 = floor(0.5*(sign(costheta1)+1.0));
+        Rs0.r = ka0.r*Ia0_pp0.r*shiny0*costhetag0;
+        Rs1.r = ka1.r*Ia1_pp0.r*shiny1*costhetag1;
+        Rs0.g = ka0.g*Ia0_pp0.g*shiny0*costhetag0;
+        Rs1.g = ka1.g*Ia1_pp0.g*shiny1*costhetag1;
+        Rs0.b = ka0.b*Ia0_pp0.b*shiny0*costhetag0;
+        Rs1.b = ka1.b*Ia1_pp0.b*shiny1*costhetag1;
+
+        vec3 R = clamp(Ra0 + Rd0 + Rs0 + Ra1 + Rd1 + Rs1, 0.0, 1.0);
+
+        gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
     }
 
 </script>
@@ -30,7 +111,7 @@
 <script type="text/javascript" src="object.js"></script>
 </head>
 
-<body onload = "initGL()">
+<body onload = "initGL()"  onkeydown="update(event)">
     <canvas id="gl-canvas" height="512" width="512">
     </canvas>
 </body>
