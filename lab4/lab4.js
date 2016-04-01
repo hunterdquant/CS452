@@ -57,26 +57,26 @@ function initGL(){
     top_ = 2;
     bottom = -2;
 
-    Lp0 = vec3(0, 3, 0);
-    Lp1 = vec3(0, 0, -3);
+    Lp0 = vec3(3, 3, -3);
+    Lp1 = vec3(3, 0, -2);
 
-    Ia0 = vec3(0.5, 0.5, 0.5);
-    Id0 = vec3(0.5, 0.55, 0.8);
-    Is0 = vec3(0.5, 0.7, 0.7);
+    Ia0 = vec3(0.7, 0.7, 0.7);
+    Id0 = vec3(0.0, 0.0, 0.0);
+    Is0 = vec3(0.0, 0.0, 0.0);
 
-    Ia1 = vec3(0.77,0.77, 0.77);
-    Id1 = vec3(0.77, 0.7, 0.9);
-    Is1 = vec3(0.7,0.77, 0.77);
+    Ia1 = vec3(0.0,0.0, 0.0);
+    Id1 = vec3(0.0,0.0, 0.0);
+    Is1 = vec3(0.0,0.0, 0.0);
 
-    ka0 = vec3(.3, .3, 1);
-    kd0 = vec3(.3, .3, .8);
-    ks0 = vec3(.1, .3, .8);
+    ka0 = vec3(1.0, 1.0, 1.0);
+    kd0 = vec3(.0, .0, 0.);
+    ks0 = vec3(.0, .0, .0);
 
-    ka1 = vec3(.7, .7, 1);
-    kd1 = vec3(.6, .6, .1);
-    ks1 = vec3(.1, .1, .1);
+    ka1 = vec3(.0, .0, .0);
+    kd1 = vec3(.0, .0, .0);
+    ks1 = vec3(.0, .0, .0);
 
-    alpha = 16;
+    alpha = 0;
 
     calcMAndMinv();
     calcPorthAndPper();
@@ -188,9 +188,6 @@ function generateNormals() {
     for (var j = 0; j < faceNormals.length; j++) {
       vertNormal = add(vertNormal, faceNormals[j]);
     }
-    vertNormal[0] /= faceNormals.length;
-    vertNormal[1] /= faceNormals.length;
-    vertNormal[2] /= faceNormals.length;
     vertNormal = normalize(vertNormal);
     vertNormals.push(vertNormal);
   }

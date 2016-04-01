@@ -62,40 +62,40 @@
         i0n = normalize(i0);
         i1n = normalize(i1);
         nn = normalize(n);
-        vn = normalize(vn);
+        vn = normalize(v);
 
         vec3 Ra0, Rd0, Rs0, Ra1, Rd1, Rs1;
 
         Ra0.r = ka0.r*Ia0_pp0.r;
         Ra1.r = ka1.r*Ia1_pp0.r;
-        Ra0.g = ka0.g*Ia0_pp0.g;
-        Ra1.g = ka1.g*Ia1_pp0.g;
-        Ra0.b = ka0.b*Ia0_pp0.b;
-        Ra1.b = ka1.b*Ia1_pp0.b;
+        Rd0.g = kd0.g*Id0_pp0.g;
+        Rd1.g = kd1.g*Id1_pp0.g;
+        Rs0.b = ks0.b*Is0_pp0.b;
+        Rs1.b = ks1.b*Is1_pp0.b;
 
-        float costheta0 = dot(i0, n);
-        float costheta1 = dot(i1, n);
-        Rd0.r = ka0.r*Ia0_pp0.r*max(costheta0, 0.0);
-        Rd1.r = ka1.r*Ia1_pp0.r*max(costheta1, 0.0);
-        Rd0.g = ka0.g*Ia0_pp0.g*max(costheta0, 0.0);
-        Rd1.g = ka1.g*Ia1_pp0.g*max(costheta1, 0.0);
-        Rd0.b = ka0.b*Ia0_pp0.b*max(costheta0, 0.0);
-        Rd1.b = ka1.b*Ia1_pp0.b*max(costheta1, 0.0);
+        float costheta0 = dot(i0n, nn);
+        float costheta1 = dot(i1n, nn);
+        Ra0.r = ka0.r*Ia0_pp0.r*max(costheta0, 0.0);
+        Ra1.r = ka1.r*Ia1_pp0.r*max(costheta1, 0.0);
+        Rd0.g = kd0.g*Id0_pp0.g*max(costheta0, 0.0);
+        Rd1.g = kd1.g*Id1_pp0.g*max(costheta1, 0.0);
+        Rs0.b = ks0.b*Is0_pp0.b*max(costheta0, 0.0);
+        Rs1.b = ks1.b*Is1_pp0.b*max(costheta1, 0.0);
 
-        vec3 r0 = normalize(2.0*costheta0*n - i0);
-        vec3 r1 = normalize(2.0*costheta1*n - i1);
-        float cosphi0 = dot(r0, v);
-        float cosphi1 = dot(r1, v);
+        vec3 r0 = normalize(2.0*costheta0*nn - i0n);
+        vec3 r1 = normalize(2.0*costheta1*nn - i1n);
+        float cosphi0 = dot(r0, vn);
+        float cosphi1 = dot(r1, vn);
         float shiny0 = pow(max(cosphi0, 0.0), alpha);
         float shiny1 = pow(max(cosphi1, 0.0), alpha);
         float costhetag0 = floor(0.5*(sign(costheta0)+1.0));
         float costhetag1 = floor(0.5*(sign(costheta1)+1.0));
-        Rs0.r = ka0.r*Ia0_pp0.r*shiny0*costhetag0;
-        Rs1.r = ka1.r*Ia1_pp0.r*shiny1*costhetag1;
-        Rs0.g = ka0.g*Ia0_pp0.g*shiny0*costhetag0;
-        Rs1.g = ka1.g*Ia1_pp0.g*shiny1*costhetag1;
-        Rs0.b = ka0.b*Ia0_pp0.b*shiny0*costhetag0;
-        Rs1.b = ka1.b*Ia1_pp0.b*shiny1*costhetag1;
+        Ra0.r = ka0.r*Ia0_pp0.r*shiny0*costhetag0;
+        Ra1.r = ka1.r*Ia1_pp0.r*shiny1*costhetag1;
+        Rd0.g = kd0.g*Id0_pp0.g*shiny0*costhetag0;
+        Rd1.g = kd1.g*Id1_pp0.g*shiny1*costhetag1;
+        Rs0.b = ks0.b*Is0_pp0.b*shiny0*costhetag0;
+        Rs1.b = ks1.b*Is1_pp0.b*shiny1*costhetag1;
 
         vec3 R = clamp(Ra0 + Rd0 + Rs0 + Ra1 + Rd1 + Rs1, 0.0, 1.0);
 
