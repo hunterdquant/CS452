@@ -10,16 +10,13 @@
     attribute vec3 nv;
 
     uniform mat4 M;
+    uniform mat4 MinvTrans;
     uniform mat4 P;
-    uniform vec3 Lp0, Lp1;
-    uniform vec3 Ia0, Id0, Is0;
-    uniform vec3 Ia1, Id1, Is1;
+    uniform vec3 p0;
+    uniform vec3 Ia, Id, Is;
 
-    varying vec3 Ia0_pp0, Id0_pp0, Is0_pp0;
-    varying vec3 Ia1_pp0, Id1_pp0, Is1_pp0;
-    varying vec3 i0, i1;
-    varying vec3 v;
-    varying vec3 n;
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, v, n;
 
     mat4 proj = mat4(1.0, 0, 0, 0,
                      0, 1.0, 0, 0,
@@ -27,19 +24,22 @@
                      0, 0, 0, 1);
     void main() {
         gl_PointSize = 1.0;
-        float L0distance = length(vertexPosition.xyz - Lp0);
-        float L1distance = length(vertexPosition.xyz - Lp1);
-        Ia0_pp0 = Ia0 / (L0distance*L0distance);
-        Id0_pp0 = Id0 / (L0distance*L0distance);
-        Is0_pp0 = Is0 / (L0distance*L0distance);
-        Ia1_pp0 = Ia1 / (L1distance*L1distance);
-        Id1_pp0 = Id1 / (L1distance*L1distance);
-        Is1_pp0 = Is1 / (L1distance*L1distance);
-        i0 = normalize(Lp0 - vertexPosition.xyz);
-        i1 = normalize(Lp1 - vertexPosition.xyz);
-        v = normalize(vec3(0.0, 0.0, 0.0) - vertexPosition.xyz);
-        n = nv;
-        gl_Position = proj * P * M * vertexPosition;
+
+        vec4 transformedVertPos = M * vertexPosition;
+        float distance = length(transformedVertPos.xyz - p0);
+
+        Ia_pp0 = Ia / (distance*distance);
+        Id_pp0 = Id / (distance*distance);
+        Is_pp0 = Is / (distance*distance);
+
+        i = normalize(p0 - transformedVertPos.xyz);
+        v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
+
+        vec4 nv4 = vec4(nv.x, nv.y, nv.z, 1.0);
+        vec4 nv4transformed = MinvTrans * nv4;
+        n = normalize(nv4transformed.xyz);
+
+        gl_Position = proj * P * transformedVertPos;
     }
 
 </script>
@@ -48,59 +48,45 @@
 
     precision mediump float;
 
-    uniform vec3 ka0, kd0, ks0;
-    uniform vec3 ka1, kd1, ks1;
+    uniform vec3 ka, kd, ks;
     uniform float alpha;
+    uniform vec3 lightDirection, directionColor;
 
-    varying vec3 Ia0_pp0, Id0_pp0, Is0_pp0;
-    varying vec3 Ia1_pp0, Id1_pp0, Is1_pp0;
-    varying vec3 i0, i1;
-    varying vec3 v;
-    varying vec3 n;
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, v, n;
     void main() {
-        vec3 i0n, i1n, nn, vn;
-        i0n = normalize(i0);
-        i1n = normalize(i1);
+        vec3 i_n, nn, vn;
+        i_n = normalize(i);
         nn = normalize(n);
         vn = normalize(v);
 
-        vec3 Ra0, Rd0, Rs0, Ra1, Rd1, Rs1;
+        vec3 Ra, Rd, Rs;
 
-        Ra0.r = ka0.r*Ia0_pp0.r;
-        Ra1.r = ka1.r*Ia1_pp0.r;
-        Rd0.g = kd0.g*Id0_pp0.g;
-        Rd1.g = kd1.g*Id1_pp0.g;
-        Rs0.b = ks0.b*Is0_pp0.b;
-        Rs1.b = ks1.b*Is1_pp0.b;
+        Ra.r = ka.r*Ia_pp0.r;
+        Ra.g = ka.g*Ia_pp0.g;
+        Ra.b = ka.b*Ia_pp0.b;
 
-        float costheta0 = dot(i0n, nn);
-        float costheta1 = dot(i1n, nn);
-        Ra0.r = ka0.r*Ia0_pp0.r*max(costheta0, 0.0);
-        Ra1.r = ka1.r*Ia1_pp0.r*max(costheta1, 0.0);
-        Rd0.g = kd0.g*Id0_pp0.g*max(costheta0, 0.0);
-        Rd1.g = kd1.g*Id1_pp0.g*max(costheta1, 0.0);
-        Rs0.b = ks0.b*Is0_pp0.b*max(costheta0, 0.0);
-        Rs1.b = ks1.b*Is1_pp0.b*max(costheta1, 0.0);
 
-        vec3 r0 = normalize(2.0*costheta0*nn - i0n);
-        vec3 r1 = normalize(2.0*costheta1*nn - i1n);
-        float cosphi0 = dot(r0, vn);
-        float cosphi1 = dot(r1, vn);
-        float shiny0 = pow(max(cosphi0, 0.0), alpha);
-        float shiny1 = pow(max(cosphi1, 0.0), alpha);
-        float costhetag0 = floor(0.5*(sign(costheta0)+1.0));
-        float costhetag1 = floor(0.5*(sign(costheta1)+1.0));
-        Ra0.r = ka0.r*Ia0_pp0.r*shiny0*costhetag0;
-        Ra1.r = ka1.r*Ia1_pp0.r*shiny1*costhetag1;
-        Rd0.g = kd0.g*Id0_pp0.g*shiny0*costhetag0;
-        Rd1.g = kd1.g*Id1_pp0.g*shiny1*costhetag1;
-        Rs0.b = ks0.b*Is0_pp0.b*shiny0*costhetag0;
-        Rs1.b = ks1.b*Is1_pp0.b*shiny1*costhetag1;
+        float costheta = dot(i_n, nn);
+        Rd.r = kd.r*Id_pp0.r*max(costheta, 0.0);
+        Rd.g = kd.g*Id_pp0.g*max(costheta, 0.0);
+        Rd.b = kd.b*Id_pp0.b*max(costheta, 0.0);
 
-        vec3 R = clamp(Ra0 + Rd0 + Rs0 + Ra1 + Rd1 + Rs1, 0.0, 1.0);
+        vec3 r = normalize(2.0*costheta*nn - i_n);
+        float cosphi = dot(r, vn);
+        float shiny = pow(max(cosphi, 0.0), alpha);
+        float costhetag0 = floor(0.5*(sign(costheta)+1.0));
+        Rs.r = ks.r*Is_pp0.r*shiny*costhetag0;
+        Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
+        Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
+
+        float directionWeight = max(dot(nn, lightDirection), 0.0);
+
+        vec3 R = clamp(Ra + Rd + Rs + directionWeight*directionColor, 0.0, 1.0);
 
         gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
     }
+
 
 </script>
 
@@ -114,5 +100,6 @@
 <body onload = "initGL()"  onkeydown="update(event)">
     <canvas id="gl-canvas" height="512" width="512">
     </canvas>
+    <button type="button" name="button" onclick="toggleSpecular()">Specular Toggle</button>
 </body>
 </html>
