@@ -73,7 +73,7 @@ function initGL(){
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     // viewer point, look-at point, up direction.
-    e = vec3(1.0, 5.0, 12.0);
+    e = vec3(10.0, 5.0, 12.0);
     a = vec3(0.0, 0.0, 0.0);
     vup = vec3(0.0, 1.0, 0.0);
 
@@ -96,7 +96,7 @@ function initGL(){
     perLeft = -perRight;
 
     // Point light source position.
-    p0 = vec3(0.0, 2.0, -1.0);
+    p0 = vec3(-1.0, 2.0, -1.0);
     pointOn = true;
     // Point light source intensity.
     Ia = vec3(0.5, 0.8, 0.5);
@@ -173,6 +173,9 @@ function initGL(){
     drawObject();
 };
 
+/* A convoluded function that returns a list of vertex normals.
+    Iterates through all the points and caclulates all the face normals around
+    it then uses those face normals to create the vertex normal.*/
 function generateNormals() {
   var vertNormals = [];
   for (var i = 0; i < vertices.length; i++) {
@@ -207,19 +210,26 @@ function drawObject() {
     gl.drawElements( gl.TRIANGLES, 3 * numTriangles, gl.UNSIGNED_SHORT, 0 )
 }
 
+/* Sets the matrices used for transformations. */
 function calcMAndMinv() {
+
+  // Unit vectors specifying the local coordinate system for the viewer.
   var n = normalize(subtract(e, a));
   var u = normalize(cross(vup, n));
   var v = normalize(cross(n, u));
 
+  // The inverse rotation matrix.
   var camRotInv = mat4(u[0], u[1], u[2], 0,
                     v[0], v[1], v[2], 0,
                     n[0], n[1], n[2], 0,
                     0, 0, 0, 1);
+
+  // The inverse translation matrix.
   var camTransInv = mat4(1, 0, 0, -e[0],
                          0, 1, 0, -e[1],
                          0, 0, 1, -e[2],
                          0, 0, 0, 1);
+
   M = flatten(mult(camRotInv, camTransInv));
   MinvTrans = [
     u[0], v[0], n[0], e[0],
@@ -229,6 +239,7 @@ function calcMAndMinv() {
   ];
 }
 
+/* Sets the projection matrices. */
 function calcPorthAndPper() {
   Porth = [
     2/(orthLeft-orthRight), 0, 0, 0,
@@ -238,22 +249,25 @@ function calcPorthAndPper() {
   ];
 
   Pper = [
-    near/perRight, 0, 0, 0,
+    -near/perRight, 0, 0, 0,
     0, near/perTop, 0, 0,
     0, 0, -(far+near)/(far-near), -1,
     0, 0, -(2*far*near)/(far-near), 0
   ];
 }
 
+/* Updates the object after changing projection type. */
 function update(event) {
   if (event.keyCode == 79) {
     gl.uniformMatrix4fv(PLoc, false, Porth);
+    drawObject();
   } else if (event.keyCode == 80) {
     gl.uniformMatrix4fv(PLoc, false, Pper);
+    drawObject();
   }
-  drawObject();
 }
 
+/* Toggles the specular projection */
 function toggleSpecular() {
     if (specular) {
       gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
@@ -264,6 +278,7 @@ function toggleSpecular() {
     drawObject();
 }
 
+/* Retrieves uniform locations */
 function getNeededLocations() {
   p0Loc = gl.getUniformLocation(myShaderProgram, "p0");
   IaLoc = gl.getUniformLocation(myShaderProgram, "Ia");
@@ -274,6 +289,7 @@ function getNeededLocations() {
   ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
 }
 
+/* Enables the point light */
 function enablePointLight() {
   gl.uniform3f(p0Loc, p0[0], p0[1], p0[2]);
   gl.uniform3f(IaLoc, Ia[0], Ia[1], Ia[2]);
@@ -284,12 +300,14 @@ function enablePointLight() {
   gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
 }
 
+/* Disables the point light */
 function disablePointLight() {
   gl.uniform3f(kaLoc, 0.0, 0.0, 0.0);
   gl.uniform3f(kdLoc, 0.0, 0.0, 0.0);
   gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
 }
 
+/* Enables directional light */
 function enableDirectionalLight() {
   lightDirectionLoc = gl.getUniformLocation(myShaderProgram, "lightDirection");
   gl.uniform3f(lightDirectionLoc, lightDirection[0], lightDirection[1], lightDirection[2]);
@@ -298,10 +316,12 @@ function enableDirectionalLight() {
   gl.uniform3f(directionColorLoc, directionColor[0], directionColor[1], directionColor[2]);
 }
 
+/* Disables directional light */
 function disableDirectionalLight() {
   gl.uniform3f(directionColorLoc, 0.0, 0.0, 0.0);
 }
 
+/* Toggles the point light */
 function togglePointLight() {
   if (pointOn) {
     disablePointLight();
@@ -312,6 +332,7 @@ function togglePointLight() {
   drawObject();
 }
 
+/* Toggles the directional light */
 function toggleDirectionalLight() {
   if (directionOn) {
     disableDirectionalLight();

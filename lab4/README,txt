@@ -1,0 +1,43 @@
+First and Last Name
+  Hunter Quant
+Date
+  04/05/2016
+
+Look-at
+  Using the look-at method, I move the viewer to the right side of the object.
+  Upon moving the viewer it was revealed that the object is a Moai statue.
+
+Projections
+  The orthographic and perspective projections can be toggled by using 'o' and 'p'.
+  The projections were implemented using the formulas described in the class slides.
+  I had an issue with the perspective projection flipping the x-axis, so I negated
+  the x component in column one of the perspective projection matrix, which resolved
+  my problem.
+
+The lights
+  I implemented a point light source and a directional light and the shading used is Phong shading.
+  The point light source is positioned to the top right of the object and
+  has intensity and reflectance coefficients.
+
+      Ia = vec3(0.5, 0.8, 0.5);
+      Id = vec3(0.4, 0.8, 0.3);
+      Is = vec3(1.0, 1.0, 1.0);
+
+      ka = vec3(0.5, 0.5, 0.6);
+      kd = vec3(0.8, 0.6, 0.6);
+      ks = vec3(1.0, 1.0, 1.0);
+
+  The directional light is located behind the viewer and only has a diffuse component.
+
+      lightDirection = vec3(0.0, 0.0, -1.0);
+      directionColor = vec3(0.5, 0.7, 0.7);
+
+  The decision to have only a diffuse component has been permitted and saves variable
+  count and the number of times the GPU needs to be accessed. Both of the lights were
+  programmed similar to the examples on the slides.
+
+The Toggles
+  Both of the lights can be toggled using buttons on the page.
+  The specular reflection for the point light source can be toggled
+  using a button on the page. I decided to make it so you can turn
+  the specular light on when the rest of the point light is off.

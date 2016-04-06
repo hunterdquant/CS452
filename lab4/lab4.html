@@ -12,10 +12,11 @@
     uniform mat4 M, MinvTrans, P;
     uniform vec3 p0;
     uniform vec3 Ia, Id, Is;
+    uniform vec3 lightDirection, directionColor;
 
     varying vec3 Ia_pp0, Id_pp0, Is_pp0;
     varying vec3 i, v, n;
-
+    varying vec3 directional;
     varying vec3 R;
     mat4 proj = mat4(1.0, 0.0, 0.0, 0.0,
                      0.0, 1.0, 0.0, 0.0,
@@ -38,8 +39,10 @@
         n = normalize(nv4transformed.xyz);
 
         i = normalize(p - transformedVertPos.xyz);
-
         v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
+
+        float directionalWeight = max(dot(n, lightDirection), 0.0);
+        directional = directionalWeight*directionColor;
 
         Ia_pp0 = Ia / (distance*distance);
         Id_pp0 = Id / (distance*distance);
@@ -56,8 +59,8 @@
 
     uniform vec3 ka, kd, ks;
     uniform float alpha;
-    uniform vec3 lightDirection, directionColor;
 
+    varying vec3 directional;
     varying vec3 Ia_pp0, Id_pp0, Is_pp0;
     varying vec3 i, v, n;
 
@@ -88,9 +91,7 @@
         Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
         Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
 
-        float directionWeight = max(dot(n_n, lightDirection), 0.0);
-
-        R = clamp(Ra + Rd + Rs + directionWeight*directionColor, 0.0, 1.0);
+        R = clamp(Ra + Rd + Rs + directional, 0.0, 1.0);
 
         gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
     }
@@ -107,6 +108,7 @@
 <body onload = "initGL()"  onkeydown="update(event)">
     <canvas id="gl-canvas" height="512" width="512" style="display:block">
     </canvas>
+    <h3>Use 'o' and 'p' to toggle orthographic and perspective projections respectively.</h3>
     <button type="button" name="button" onclick="toggleSpecular()">Specular Toggle</button>
     <button type="button" name="button" onclick="togglePointLight()">Point Toggle</button>
     <button type="button" name="button" onclick="toggleDirectionalLight()">Directional Toggle</button>
