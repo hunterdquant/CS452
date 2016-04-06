@@ -1,43 +1,66 @@
 // Name: Hunter Quant
 
+// GL
 var gl;
+// Graphics Shader
 var myShaderProgram
+// Number of vertices in the shape and the number of polygons.
 var numVertices;
 var numTriangles;
+// A transposed list of vertices.
 var flatVertices;
+// A list of all vertices.
 var vertices;
+// Associates vertices with points in a triangle.
 var indexList;
+// A list of all vertex normals.
 var vertNormals;
 
+// A matrix representing the model view transformation transpoed and inverse.
+// for lighting calculations.
 var MinvTrans;
+// A matrix representing a model view transformation.
 var M;
+
+// Matrices representing a orthogonal and perspective projection.
 var Porth;
 var Pper;
 
+// Viewer location.
 var e;
+// Look-at point.
 var a;
+// Up direction.
 var vup;
 
-var orthLeft, orthRight;
-var orthTop, orthBottom;
+// Bounds for a orthogonal projection.
+var orthLeft, orthRight, orthTop, orthBottom;
+var perLeft, perRight, perTop, perBottom;
+
+// Distance bounds
 var near, far;
 
+// Uniform locations that need to be altered.
 var PLoc, alphaLoc, IaLoc, IdLoc, IsLoc, kaLoc, kdLoc, ksLoc, p0Loc;
 
-// Point light
+// Point light along with its intensity, reflectance coefficients, and on state.
 var p0;
+var pointOn;
 var Ia, Id, Is;
 var ka, kd, ks;
 
+// Shiny factor.
 var alpha;
+// A boolean for whether specularity is currently on.
 var specular;
+// A copy of the specular reflectance coefficient for toggling.
 var spcularVals;
 
-// Directional light
+// Directional light with its direction, color, and on state.
+// diffuse only.
 var lightDirection;
 var directionColor;
-
-
+var directionOn;
 
 function initGL(){
     var canvas = document.getElementById( "gl-canvas" );
@@ -47,46 +70,58 @@ function initGL(){
 
     gl.enable(gl.DEPTH_TEST);
     gl.viewport( 0, 0, 512, 512 );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
-    e = vec3(1.0, 1.0, 12.0);
-    a = vec3(0, 0, 0);
-    vup = vec3(0, 1, 0);
+    // viewer point, look-at point, up direction.
+    e = vec3(1.0, 5.0, 12.0);
+    a = vec3(0.0, 0.0, 0.0);
+    vup = vec3(0.0, 1.0, 0.0);
 
+    // Set bounds for projections.
     viewerDist = length(subtract(e, a));
-
     near = viewerDist - 3;
     far = viewerDist + 3;
 
+
+    // Othographic projection bounds.
     orthLeft = -3;
     orthRight = 3;
     orthTop = 2;
     orthBottom = -2;
 
+    // Perspecive projection bounds.
     perTop = near * Math.tan(Math.PI/4);
     perBottom = -perTop;
     perRight = perTop;
     perLeft = -perRight;
 
-    p0 = vec3(1.0, 1.0, 1.0);
-
-    Ia = vec3(0.5, 0.2, 0.5);
+    // Point light source position.
+    p0 = vec3(0.0, 2.0, -1.0);
+    pointOn = true;
+    // Point light source intensity.
+    Ia = vec3(0.5, 0.8, 0.5);
     Id = vec3(0.4, 0.8, 0.3);
     Is = vec3(1.0, 1.0, 1.0);
 
-    ka = vec3(0.5, 0.5, 0.2);
-    kd = vec3(0.3, 0.3, 0.2);
-    ks = specularVals = vec3(1.0, 1.0, 1.0);
+    // Point light source reflectance coefficients.
+    ka = vec3(0.5, 0.5, 0.6);
+    kd = vec3(0.8, 0.6, 0.6);
+    ks = vec3(1.0, 1.0, 1.0);
 
-    alpha = 0;
+    // Shine value and specular state.
+    alpha = 1.0;
     specular = true;
 
+    // Direction and color value for the diffuse directional light.
     lightDirection = vec3(0.0, 0.0, -1.0);
-    directionColor = vec3(0.0, 0.0, 0.0);
+    directionColor = vec3(0.5, 0.7, 0.7);
+    directionOn = true;
 
+    // Sets the needed matrices.
     calcMAndMinv();
     calcPorthAndPper();
 
+    // Below is all of the accessing of the GPU
     myShaderProgram = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( myShaderProgram );
 
@@ -126,16 +161,10 @@ function initGL(){
 
     PLoc = gl.getUniformLocation(myShaderProgram, "P");
     gl.uniformMatrix4fv(PLoc, false, Porth);
-
-    console.log(Ia);
-    console.log(Id);
-    console.log(Is);
-    console.log(ka);
-    console.log(kd);
-    console.log(ks);
-    
+    getNeededLocations();
     enablePointLight();
     enableDirectionalLight();
+
     alphaLoc = gl.getUniformLocation(myShaderProgram, "alpha");
     gl.uniform1f(alphaLoc, alpha);
 
@@ -229,34 +258,38 @@ function toggleSpecular() {
     if (specular) {
       ks = vec3(0.0, 0.0, 0.0);
     } else {
-      ks = specularVals;
+      ks = vec3(1.0, 1.0, 1.0);
     }
     specular = !specular;
-    var ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
+    ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
     gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
+    drawObject();
+}
+
+function getNeededLocations() {
+  p0Loc = gl.getUniformLocation(myShaderProgram, "p0");
+  IaLoc = gl.getUniformLocation(myShaderProgram, "Ia");
+  IdLoc = gl.getUniformLocation(myShaderProgram, "Id");
+  IsLoc = gl.getUniformLocation(myShaderProgram, "Is");
+  kaLoc = gl.getUniformLocation(myShaderProgram, "ka");
+  kdLoc = gl.getUniformLocation(myShaderProgram, "kd");
+  ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
 }
 
 function enablePointLight() {
-  p0Loc = gl.getUniformLocation(myShaderProgram, "p0");
   gl.uniform3f(p0Loc, p0[0], p0[1], p0[2]);
-
-  IaLoc = gl.getUniformLocation(myShaderProgram, "Ia");
   gl.uniform3f(IaLoc, Ia[0], Ia[1], Ia[2]);
-
-  IdLoc = gl.getUniformLocation(myShaderProgram, "Id");
   gl.uniform3f(IdLoc, Id[0], Id[1], Id[2]);
-
-  IsLoc = gl.getUniformLocation(myShaderProgram, "Is");
   gl.uniform3f(IsLoc, Is[0], Is[1], Is[2]);
-
-  kaLoc = gl.getUniformLocation(myShaderProgram, "ka");
   gl.uniform3f(kaLoc, ka[0], ka[1], ka[2]);
-
-  kdLoc = gl.getUniformLocation(myShaderProgram, "kd");
   gl.uniform3f(kdLoc, kd[0], kd[1], kd[2]);
-
-  ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
   gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
+}
+
+function disablePointLight() {
+  gl.uniform3f(kaLoc, 0.0, 0.0, 0.0);
+  gl.uniform3f(kdLoc, 0.0, 0.0, 0.0);
+  gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
 }
 
 function enableDirectionalLight() {
@@ -265,4 +298,28 @@ function enableDirectionalLight() {
 
   directionColorLoc = gl.getUniformLocation(myShaderProgram, "directionColor");
   gl.uniform3f(directionColorLoc, directionColor[0], directionColor[1], directionColor[2]);
+}
+
+function disableDirectionalLight() {
+  gl.uniform3f(directionColorLoc, 0.0, 0.0, 0.0);
+}
+
+function togglePointLight() {
+  if (pointOn) {
+    disablePointLight();
+  } else {
+    enablePointLight();
+  }
+  pointOn = !pointOn;
+  drawObject();
+}
+
+function toggleDirectionalLight() {
+  if (directionOn) {
+    disableDirectionalLight();
+  } else {
+    enableDirectionalLight();
+  }
+  directionOn = !directionOn;
+  drawObject();
 }

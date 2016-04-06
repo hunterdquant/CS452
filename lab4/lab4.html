@@ -9,35 +9,62 @@
     attribute vec4 vertexPosition;
     attribute vec3 nv;
 
-    uniform mat4 M;
-    uniform mat4 MinvTrans;
-    uniform mat4 P;
+    uniform mat4 M, MinvTrans, P;
     uniform vec3 p0;
     uniform vec3 Ia, Id, Is;
+    uniform vec3 ka, kd, ks;
+    uniform float alpha;
+    uniform vec3 lightDirection, directionColor;
+    vec3 Ia_pp0, Id_pp0, Is_pp0;
+    vec3 i, v, n;
 
-    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
-    varying vec3 i, v, n;
-
-    mat4 proj = mat4(1.0, 0, 0, 0,
-                     0, 1.0, 0, 0,
-                     0, 0, -1.0, 0,
-                     0, 0, 0, 1);
+    varying vec3 R;
+    mat4 proj = mat4(1.0, 0.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0, 0.0,
+                     0.0, 0.0, -1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
     void main() {
+
         gl_PointSize = 1.0;
 
         vec4 transformedVertPos = M * vertexPosition;
-        float distance = length(transformedVertPos.xyz - p0);
+        vec4 p04 = vec4(p0.x, p0.y, p0.z, 1.0);
+        vec4 p04transformed = M * p04;
+        vec3 p = p04transformed.xyz;
+        float distance = length(vertexPosition.xyz - p0);
+
+        vec4 nv4 = vec4(nv.x, nv.y, nv.z, 1.0);
+        vec4 nv4transformed = MinvTrans * nv4;
+        n = normalize(nv4transformed.xyz);
 
         Ia_pp0 = Ia / (distance*distance);
         Id_pp0 = Id / (distance*distance);
         Is_pp0 = Is / (distance*distance);
 
-        i = normalize(p0 - transformedVertPos.xyz);
-        v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
+        vec3 Ra, Rd, Rs;
 
-        vec4 nv4 = vec4(nv.x, nv.y, nv.z, 1.0);
-        vec4 nv4transformed = MinvTrans * nv4;
-        n = normalize(nv4transformed.xyz);
+        Ra.r = ka.r*Ia_pp0.r;
+        Ra.g = ka.g*Ia_pp0.g;
+        Ra.b = ka.b*Ia_pp0.b;
+
+        i = normalize(p - transformedVertPos.xyz);
+        float costheta = dot(i, n);
+        Rd.r = kd.r*Id_pp0.r*max(costheta, 0.0);
+        Rd.g = kd.g*Id_pp0.g*max(costheta, 0.0);
+        Rd.b = kd.b*Id_pp0.b*max(costheta, 0.0);
+
+        vec3 r = normalize(2.0*costheta*n - i);
+        v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
+        float cosphi = dot(r, v);
+        float shiny = pow(max(cosphi, 0.0), alpha);
+        float costhetag0 = floor(0.5*(sign(costheta)+1.0));
+        Rs.r = ks.r*Is_pp0.r*shiny*costhetag0;
+        Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
+        Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
+
+        float directionWeight = max(dot(n, lightDirection), 0.0);
+
+        R = clamp(Ra + Rd + Rs + directionWeight*directionColor, 0.0, 1.0);
 
         gl_Position = proj * P * transformedVertPos;
     }
@@ -48,45 +75,11 @@
 
     precision mediump float;
 
-    uniform vec3 ka, kd, ks;
-    uniform float alpha;
-    uniform vec3 lightDirection, directionColor;
-
-    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
-    varying vec3 i, v, n;
+    varying vec3 R;
     void main() {
-        vec3 i_n, nn, vn;
-        i_n = normalize(i);
-        nn = normalize(n);
-        vn = normalize(v);
-
-        vec3 Ra, Rd, Rs;
-
-        Ra.r = ka.r*Ia_pp0.r;
-        Ra.g = ka.g*Ia_pp0.g;
-        Ra.b = ka.b*Ia_pp0.b;
-
-
-        float costheta = dot(i_n, nn);
-        Rd.r = kd.r*Id_pp0.r*max(costheta, 0.0);
-        Rd.g = kd.g*Id_pp0.g*max(costheta, 0.0);
-        Rd.b = kd.b*Id_pp0.b*max(costheta, 0.0);
-
-        vec3 r = normalize(2.0*costheta*nn - i_n);
-        float cosphi = dot(r, vn);
-        float shiny = pow(max(cosphi, 0.0), alpha);
-        float costhetag0 = floor(0.5*(sign(costheta)+1.0));
-        Rs.r = ks.r*Is_pp0.r*shiny*costhetag0;
-        Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
-        Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
-
-        float directionWeight = max(dot(nn, lightDirection), 0.0);
-
-        vec3 R = clamp(Ra + Rd + Rs + directionWeight*directionColor, 0.0, 1.0);
 
         gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
     }
-
 
 </script>
 
@@ -98,8 +91,10 @@
 </head>
 
 <body onload = "initGL()"  onkeydown="update(event)">
-    <canvas id="gl-canvas" height="512" width="512">
+    <canvas id="gl-canvas" height="512" width="512" style="display:block">
     </canvas>
     <button type="button" name="button" onclick="toggleSpecular()">Specular Toggle</button>
+    <button type="button" name="button" onclick="togglePointLight()">Point Toggle</button>
+    <button type="button" name="button" onclick="toggleDirectionalLight()">Directional Toggle</button>
 </body>
 </html>
