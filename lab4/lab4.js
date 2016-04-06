@@ -256,13 +256,11 @@ function update(event) {
 
 function toggleSpecular() {
     if (specular) {
-      ks = vec3(0.0, 0.0, 0.0);
+      gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
     } else {
-      ks = vec3(1.0, 1.0, 1.0);
+      gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
     }
     specular = !specular;
-    ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
-    gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
     drawObject();
 }
 
