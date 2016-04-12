@@ -242,14 +242,14 @@ function calcMAndMinv() {
 /* Sets the projection matrices. */
 function calcPorthAndPper() {
   Porth = [
-    2/(orthLeft-orthRight), 0, 0, 0,
+    2/(orthRight-orthLeft), 0, 0, 0,
     0, 2/(orthTop-orthBottom), 0, 0,
     0, 0, -2/(far-near), 0,
     -(orthLeft+orthRight)/(orthLeft-orthRight), -(orthTop+orthBottom)/(orthTop-orthBottom), -(far+near)/(far-near), 1
   ];
 
   Pper = [
-    -near/perRight, 0, 0, 0,
+    near/perRight, 0, 0, 0,
     0, near/perTop, 0, 0,
     0, 0, -(far+near)/(far-near), -1,
     0, 0, -(2*far*near)/(far-near), 0

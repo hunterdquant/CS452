@@ -4,15 +4,12 @@ Date
   04/05/2016
 
 Look-at
-  Using the look-at method, I move the viewer to the right side of the object.
+  Using the look-at method, I move the viewer to the bottom-left side of the object.
   Upon moving the viewer it was revealed that the object is a Moai statue.
 
 Projections
   The orthographic and perspective projections can be toggled by using 'o' and 'p'.
   The projections were implemented using the formulas described in the class slides.
-  I had an issue with the perspective projection flipping the x-axis, so I negated
-  the x component in column one of the perspective projection matrix, which resolved
-  my problem.
 
 The lights
   I implemented a point light source and a directional light and the shading used is Phong shading.
