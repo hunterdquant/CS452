@@ -62,6 +62,10 @@ var lightDirection;
 var directionColor;
 var directionOn;
 
+var radius = 2;
+var latitudeBands = 30;
+var longitudeBands = 30;
+
 function initGL(){
     var canvas = document.getElementById( "gl-canvas" );
 
@@ -73,7 +77,7 @@ function initGL(){
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
     // viewer point, look-at point, up direction.
-    e = vec3(10.0, 5.0, 12.0);
+    e = vec3(1.0, 5.0, 12.0);
     a = vec3(0.0, 0.0, 0.0);
     vup = vec3(0.0, 1.0, 0.0);
 
@@ -124,13 +128,11 @@ function initGL(){
     // Below is all of the accessing of the GPU
     myShaderProgram = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( myShaderProgram );
-
-    numVertices = 1738;
-    numTriangles = 3170;
     vertices = getVertices(); // vertices and faces are defined in object.js
-    indexList = getFaces();
-    flatVertices = flatten(vertices);
-    vertNormals = generateNormals();
+    indexList = getIndices();
+    flatVertices = vertices;
+    console.log(vertNormals);
+    //vertNormals = generateNormals();
 
     var indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
@@ -138,15 +140,15 @@ function initGL(){
 
     var verticesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatVertices, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatVertices), gl.STATIC_DRAW);
 
     var vertexPosition = gl.getAttribLocation(myShaderProgram,"vertexPosition");
-    gl.vertexAttribPointer( vertexPosition, 4, gl.FLOAT, false, 0, 0 );
+    gl.vertexAttribPointer( vertexPosition, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vertexPosition );
 
     var normalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(vertNormals), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertNormals), gl.STATIC_DRAW);
 
     var nvPosition = gl.getAttribLocation(myShaderProgram,"nv");
     gl.vertexAttribPointer( nvPosition, 3, gl.FLOAT, false, 0, 0 );
@@ -172,6 +174,59 @@ function initGL(){
 
     drawObject();
 };
+
+function getVertices() {
+    var vertexPositionData = [];
+    var normalData = [];
+    var textureCoordData = [];
+    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
+      var theta = latNumber * Math.PI / latitudeBands;
+      var sinTheta = Math.sin(theta);
+      var cosTheta = Math.cos(theta);
+
+      for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
+        var phi = longNumber * 2 * Math.PI / longitudeBands;
+        var sinPhi = Math.sin(phi);
+        var cosPhi = Math.cos(phi);
+
+        var x = cosPhi * sinTheta;
+        var y = cosTheta;
+        var z = sinPhi * sinTheta;
+        var u = 1 - (longNumber / longitudeBands);
+        var v = 1 - (latNumber / latitudeBands);
+
+        normalData.push(x);
+        normalData.push(y);
+        normalData.push(z);
+        textureCoordData.push(u);
+        textureCoordData.push(v);
+        vertexPositionData.push(radius * x);
+        vertexPositionData.push(radius * y);
+        vertexPositionData.push(radius * z);
+      }
+    }
+    vertNormals = normalData;
+    return vertexPositionData;
+
+}
+
+function getIndices() {
+  var indexData = [];
+   for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
+     for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
+       var first = (latNumber * (longitudeBands + 1)) + longNumber;
+       var second = first + longitudeBands + 1;
+       indexData.push(first);
+       indexData.push(second);
+       indexData.push(first + 1);
+
+       indexData.push(second);
+       indexData.push(second + 1);
+       indexData.push(first + 1);
+     }
+   }
+   return indexData;
+}
 
 /* A convoluded function that returns a list of vertex normals.
     Iterates through all the points and caclulates all the face normals around
@@ -207,7 +262,7 @@ function generateNormals() {
 
 function drawObject() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-    gl.drawElements( gl.TRIANGLES, 3 * numTriangles, gl.UNSIGNED_SHORT, 0 )
+    gl.drawElements( gl.TRIANGLES, vertices.length/3, gl.UNSIGNED_SHORT, 0 )
 }
 
 /* Sets the matrices used for transformations. */

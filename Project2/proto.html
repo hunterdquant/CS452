@@ -6,7 +6,7 @@
 
     precision mediump float;
 
-    attribute vec4 vertexPosition;
+    attribute vec3 vertexPosition;
     attribute vec3 nv;
 
     uniform mat4 M, MinvTrans, P;
@@ -26,7 +26,7 @@
 
         gl_PointSize = 1.0;
 
-        vec4 transformedVertPos = M * vertexPosition;
+        vec4 transformedVertPos = M * vec4(vertexPosition, 1.0);
 
         float distance = length(vertexPosition.xyz - p0);
 
@@ -101,8 +101,7 @@
 <script type="text/javascript" src="../Common/webgl-utils.js"></script>
 <script type="text/javascript" src="../Common/initShaders.js"></script>
 <script type="text/javascript" src="../Common/MV.js"></script>
-<script type="text/javascript" src="lab4.js"></script>
-<script type="text/javascript" src="object.js"></script>
+<script type="text/javascript" src="proto.js"></script>
 </head>
 
 <body onload = "initGL()"  onkeydown="update(event)">
