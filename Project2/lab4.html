@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script id="vertex-shader" type="x-shader/x-vertex">
+
+    precision mediump float;
+
+    attribute vec4 vertexPosition;
+    attribute vec3 nv;
+
+    uniform mat4 M, MinvTrans, P;
+    uniform vec3 p0;
+    uniform vec3 Ia, Id, Is;
+    uniform vec3 lightDirection, directionColor;
+
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, v, n;
+    varying vec3 directional;
+    varying vec3 R;
+    mat4 proj = mat4(1.0, 0.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0, 0.0,
+                     0.0, 0.0, -1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
+    void main() {
+
+        gl_PointSize = 1.0;
+
+        vec4 transformedVertPos = M * vertexPosition;
+
+        float distance = length(vertexPosition.xyz - p0);
+
+        vec4 p04 = vec4(p0.x, p0.y, p0.z, 1.0);
+        vec4 p04transformed = M * p04;
+        vec3 p = p04transformed.xyz;
+
+        vec4 nv4 = vec4(nv.x, nv.y, nv.z, 1.0);
+        vec4 nv4transformed = MinvTrans * nv4;
+        n = normalize(nv4transformed.xyz);
+
+        i = normalize(p - transformedVertPos.xyz);
+        v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
+
+        float directionalWeight = max(dot(n, lightDirection), 0.0);
+        directional = directionalWeight*directionColor;
+
+        Ia_pp0 = Ia / (distance*distance);
+        Id_pp0 = Id / (distance*distance);
+        Is_pp0 = Is / (distance*distance);
+
+        gl_Position = proj * P * transformedVertPos;
+    }
+
+</script>
+
+<script id="fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    uniform vec3 ka, kd, ks;
+    uniform float alpha;
+
+    varying vec3 directional;
+    varying vec3 Ia_pp0, Id_pp0, Is_pp0;
+    varying vec3 i, v, n;
+
+    vec3 R;
+    void main() {
+
+        vec3 i_n, v_n, n_n;
+        i_n = normalize(i);
+        v_n = normalize(v);
+        n_n = normalize(n);
+
+        vec3 Ra, Rd, Rs;
+
+        Ra.r = ka.r*Ia_pp0.r;
+        Ra.g = ka.g*Ia_pp0.g;
+        Ra.b = ka.b*Ia_pp0.b;
+
+        float costheta = dot(i_n, n_n);
+        Rd.r = kd.r*Id_pp0.r*max(costheta, 0.0);
+        Rd.g = kd.g*Id_pp0.g*max(costheta, 0.0);
+        Rd.b = kd.b*Id_pp0.b*max(costheta, 0.0);
+
+        vec3 r = normalize(2.0*costheta*n_n - i_n);
+        float cosphi = dot(r, v_n);
+        float shiny = pow(max(cosphi, 0.0), alpha);
+        float costhetag0 = floor(0.5*(sign(costheta)+1.0));
+        Rs.r = ks.r*Is_pp0.r*shiny*costhetag0;
+        Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
+        Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
+
+        R = clamp(Ra + Rd + Rs + directional, 0.0, 1.0);
+
+        gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
+    }
+
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="lab4.js"></script>
+<script type="text/javascript" src="object.js"></script>
+</head>
+
+<body onload = "initGL()"  onkeydown="update(event)">
+    <canvas id="gl-canvas" height="512" width="512" style="display:block">
+    </canvas>
+    <h3>Use 'o' and 'p' to toggle orthographic and perspective projections respectively.</h3>
+    <button type="button" name="button" onclick="toggleSpecular()">Specular Toggle</button>
+    <button type="button" name="button" onclick="togglePointLight()">Point Toggle</button>
+    <button type="button" name="button" onclick="toggleDirectionalLight()">Directional Toggle</button>
+</body>
+</html>
