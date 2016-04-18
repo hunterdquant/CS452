@@ -11,7 +11,7 @@ var M;
 
 // Matrices representing a orthogonal and perspective projection.
 var Porth;
-var Pper;
+var P;
 
 // Viewer location.
 var e;
@@ -80,7 +80,7 @@ function initGL() {
 
 function setModelView() {
   // viewer point, look-at point, up direction.
-  e = vec3(0.0, 2.0, 3.0);
+  e = vec3(0.0, 0.0, 3.0);
   a = vec3(0.0, 0.0, 0.0);
   vup = vec3(0.0, 1.0, 0.0);
 
@@ -91,8 +91,8 @@ function setProjection() {
 
   // Set bounds for projection.
   viewerDist = length(subtract(e, a));
-  near = viewerDist - 1.5;
-  far = viewerDist + 1.5;
+  near = viewerDist - 2;
+  far = viewerDist + 2;
 
   // Perspecive projection bounds.
   perTop = near * Math.tan(Math.PI / 4);
@@ -133,7 +133,7 @@ function createGeometry() {
     vertices: ellipsoidVerts,
     indexList: sphereInds,
     normals: getNormals(ellipsoidVerts, sphereInds),
-    program: initShaders(gl, "vertex-shader", "fragment-shader"),
+    program: initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader"),
     vertDim: 3,
     numElems: sphereInds.length
   }
@@ -173,7 +173,7 @@ function drawEllipsoid() {
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
   PLoc = gl.getUniformLocation(ellipsoid.program, "P");
-  gl.uniformMatrix4fv(PLoc, false, Pper);
+  gl.uniformMatrix4fv(PLoc, false, P);
   getNeededLocations();
   enablePointLight();
   enableDirectionalLight();
@@ -201,12 +201,10 @@ function getSphereVertices(isEllipse) {
       var x = cosPhi * sinTheta;
       var y = cosTheta;
       var z = sinPhi * sinTheta;
-
-      var s = 1 - (longNumber / longBands);
-      var t = 1 - (latNumber / latBands);
-
-      texCoords.push(s);
-      texCoords.push(t);
+      if (!isEllipse) {
+        texCoords.push(1 - (longNumber / longBands));
+        texCoords.push(1 - (latNumber / latBands));
+      }
       vertPositions.push(radius * x);
       if (isEllipse) {
         vertPositions.push(2 * radius * y);
@@ -268,7 +266,28 @@ function getNormals(vertices, indexList) {
 }
 
 function initTextures() {
+  var frontImage = document.getElementById("front");
+  var rightImage = document.getElementById("right");
+  var backImage = document.getElementById("back");
+  var leftImage = document.getElementById("left");
+  var topImage = document.getElementById("top");
+  var bottomImage = document.getElementById("bottom");
 
+  var cubeMap = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, rightImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, leftImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, topImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, bottomImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, frontImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, backImage);
+
+  cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
+  gl.uniform1i(cubeTexMapLoc, 0);
 }
 
 function renderObjects() {
@@ -308,7 +327,7 @@ function calcMAndMinv() {
 
 /* Sets the projection matrices. */
 function getPerspective() {
-  Pper = [
+  P = [
     near / perRight, 0, 0, 0,
     0, near / perTop, 0, 0,
     0, 0, -(far + near) / (far - near), -1,
