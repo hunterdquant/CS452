@@ -61,8 +61,14 @@ var directionColor;
 var directionOn;
 
 var radius = 1;
-var latitudeBands = 64;
-var longitudeBands = 64;
+var latBands = 64;
+var longBands = 64;
+
+var ellipsoid;
+var sphere;
+var star;
+var box;
+var shards;
 
 function initGL(){
     var canvas = document.getElementById( "gl-canvas" );
@@ -76,32 +82,14 @@ function initGL(){
 
     setModelView();
     setProjection();
-
-    // Point light source position.
-    p0 = vec3(0.5, 0.5, 0.5);
-    // Point light source intensity.
-    Ia = vec3(0.5, 0.8, 0.5);
-    Id = vec3(0.4, 0.8, 0.3);
-    Is = vec3(1.0, 1.0, 1.0);
-
-    // Point light source reflectance coefficients.
-    ka = vec3(0.5, 0.5, 0.6);
-    kd = vec3(0.8, 0.6, 0.6);
-    ks = vec3(1.0, 1.0, 1.0);
-
-    // Shine value and specular state.
-    alpha = 5.0;
-    specular = true;
-
-    // Direction and color value for the diffuse directional light.
-    lightDirection = vec3(0.0, 0.0, 1.0);
-    directionColor = vec3(0.5, 0.7, 0.7);
-    directionOn = true;
+    setUpLighting();
+    createGeometry();
+    initTextures();
 
     // Below is all of the accessing of the GPU
     myShaderProgram = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( myShaderProgram );
-    vertices = getVertices(); // vertices and faces are defined in object.js
+    vertices = getSphereVertices(); // vertices and faces are defined in object.js
     indexList = getSphereIndices();
     vertNormals = generateNormals();
     var indexBuffer = gl.createBuffer();
@@ -147,7 +135,7 @@ function initGL(){
 
 function setModelView() {
   // viewer point, look-at point, up direction.
-  e = vec3(0.0, 0.0, 2.0);
+  e = vec3(0.0, 2.0, 3.0);
   a = vec3(0.0, 0.0, 0.0);
   vup = vec3(0.0, 1.0, 0.0);
 
@@ -170,41 +158,71 @@ function setProjection() {
   getPerspective();
 }
 
-function getVertices() {
-    var vertexPositions = [];
-    var textureCoords = [];
-    for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
-      var theta = latNumber * Math.PI / latitudeBands;
+function setUpLighting() {
+  // Point light source position.
+  p0 = vec3(1.0, 1.0, 1.0);
+  // Point light source intensity.
+  Ia = vec3(0.5, 0.8, 0.5);
+  Id = vec3(0.4, 0.8, 0.3);
+  Is = vec3(1.0, 1.0, 1.0);
+
+  // Point light source reflectance coefficients.
+  ka = vec3(0.5, 0.5, 0.6);
+  kd = vec3(0.8, 0.6, 0.6);
+  ks = vec3(1.0, 1.0, 1.0);
+
+  // Shine value and specular state.
+  alpha = 5.0;
+  specular = true;
+
+  // Direction and color value for the diffuse directional light.
+  lightDirection = vec3(0.0, 0.0, 1.0);
+  directionColor = vec3(0.5, 0.7, 0.7);
+  directionOn = true;
+}
+
+
+function createGeometry() {
+
+}
+
+function getSphereVertices() {
+
+    var vertPositions = [];
+    var texCoords = [];
+    for (var latNumber = 0; latNumber <= latBands; latNumber++) {
+      var theta = latNumber * Math.PI / latBands;
       var sinTheta = Math.sin(theta);
       var cosTheta = Math.cos(theta);
 
-      for (var longNumber = 0; longNumber <= longitudeBands; longNumber++) {
-        var phi = longNumber * 2 * Math.PI / longitudeBands;
+      for (var longNumber = 0; longNumber <= longBands; longNumber++) {
+        var phi = longNumber * 2 * Math.PI / longBands;
         var sinPhi = Math.sin(phi);
         var cosPhi = Math.cos(phi);
 
         var x = cosPhi * sinTheta;
         var y = cosTheta;
         var z = sinPhi * sinTheta;
-        var u = 1 - (longNumber / longitudeBands);
-        var v = 1 - (latNumber / latitudeBands);
 
-        textureCoords.push(u);
-        textureCoords.push(v);
-        vertexPositions.push(radius * x);
-        vertexPositions.push(radius * y);
-        vertexPositions.push(radius * z);
+        var s = 1 - (longNumber / longBands);
+        var t = 1 - (latNumber / latBands);
+
+        texCoords.push(s);
+        texCoords.push(t);
+        vertPositions.push(radius * x);
+        vertPositions.push(2*radius * y);
+        vertPositions.push(radius * z);
       }
     }
-    return vertexPositions;
+    return vertPositions;
 }
 
 function getSphereIndices() {
   var indices = [];
-   for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
-     for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
-       var first = (latNumber * (longitudeBands + 1)) + longNumber;
-       var second = first + longitudeBands + 1;
+   for (var latNumber = 0; latNumber < latBands; latNumber++) {
+     for (var longNumber = 0; longNumber < longBands; longNumber++) {
+       var first = (latNumber * (longBands + 1)) + longNumber;
+       var second = first + longBands + 1;
        indices.push(first);
        indices.push(second);
        indices.push(first + 1);
@@ -247,6 +265,9 @@ function generateNormals() {
   return vertNormals;
 }
 
+function initTextures() {
+  
+}
 
 function drawObject() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
