@@ -8,7 +8,7 @@ var myShaderProgram
 var numVertices;
 var numTriangles;
 // A transposed list of vertices.
-var flatVertices;
+var vertices;
 // A list of all vertices.
 var vertices;
 // Associates vertices with points in a triangle.
@@ -33,8 +33,6 @@ var a;
 // Up direction.
 var vup;
 
-// Bounds for a orthogonal projection.
-var orthLeft, orthRight, orthTop, orthBottom;
 var perLeft, perRight, perTop, perBottom;
 
 // Distance bounds
@@ -62,9 +60,9 @@ var lightDirection;
 var directionColor;
 var directionOn;
 
-var radius = 2;
-var latitudeBands = 30;
-var longitudeBands = 30;
+var radius = 1;
+var latitudeBands = 64;
+var longitudeBands = 64;
 
 function initGL(){
     var canvas = document.getElementById( "gl-canvas" );
@@ -76,32 +74,11 @@ function initGL(){
     gl.viewport( 0, 0, 512, 512 );
     gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 
-    // viewer point, look-at point, up direction.
-    e = vec3(1.0, 5.0, 12.0);
-    a = vec3(0.0, 0.0, 0.0);
-    vup = vec3(0.0, 1.0, 0.0);
-
-    // Set bounds for projections.
-    viewerDist = length(subtract(e, a));
-    near = viewerDist - 3;
-    far = viewerDist + 3;
-
-
-    // Othographic projection bounds.
-    orthLeft = -3;
-    orthRight = 3;
-    orthTop = 2;
-    orthBottom = -2;
-
-    // Perspecive projection bounds.
-    perTop = near * Math.tan(Math.PI/4);
-    perBottom = -perTop;
-    perRight = perTop;
-    perLeft = -perRight;
+    setModelView();
+    setProjection();
 
     // Point light source position.
-    p0 = vec3(-1.0, 2.0, -1.0);
-    pointOn = true;
+    p0 = vec3(0.5, 0.5, 0.5);
     // Point light source intensity.
     Ia = vec3(0.5, 0.8, 0.5);
     Id = vec3(0.4, 0.8, 0.3);
@@ -113,34 +90,27 @@ function initGL(){
     ks = vec3(1.0, 1.0, 1.0);
 
     // Shine value and specular state.
-    alpha = 1.0;
+    alpha = 5.0;
     specular = true;
 
     // Direction and color value for the diffuse directional light.
-    lightDirection = vec3(0.0, 0.0, -1.0);
+    lightDirection = vec3(0.0, 0.0, 1.0);
     directionColor = vec3(0.5, 0.7, 0.7);
     directionOn = true;
-
-    // Sets the needed matrices.
-    calcMAndMinv();
-    calcPorthAndPper();
 
     // Below is all of the accessing of the GPU
     myShaderProgram = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( myShaderProgram );
     vertices = getVertices(); // vertices and faces are defined in object.js
-    indexList = getIndices();
-    flatVertices = vertices;
-    console.log(vertNormals);
-    //vertNormals = generateNormals();
-
+    indexList = getSphereIndices();
+    vertNormals = generateNormals();
     var indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexList), gl.STATIC_DRAW);
 
     var verticesBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatVertices), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
     var vertexPosition = gl.getAttribLocation(myShaderProgram,"vertexPosition");
     gl.vertexAttribPointer( vertexPosition, 3, gl.FLOAT, false, 0, 0 );
@@ -148,7 +118,7 @@ function initGL(){
 
     var normalsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertNormals), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(vertNormals)), gl.STATIC_DRAW);
 
     var nvPosition = gl.getAttribLocation(myShaderProgram,"nv");
     gl.vertexAttribPointer( nvPosition, 3, gl.FLOAT, false, 0, 0 );
@@ -162,7 +132,7 @@ function initGL(){
     gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
     PLoc = gl.getUniformLocation(myShaderProgram, "P");
-    gl.uniformMatrix4fv(PLoc, false, Porth);
+    gl.uniformMatrix4fv(PLoc, false, Pper);
     getNeededLocations();
     enablePointLight();
     enableDirectionalLight();
@@ -175,10 +145,34 @@ function initGL(){
     drawObject();
 };
 
+function setModelView() {
+  // viewer point, look-at point, up direction.
+  e = vec3(0.0, 0.0, 2.0);
+  a = vec3(0.0, 0.0, 0.0);
+  vup = vec3(0.0, 1.0, 0.0);
+
+  calcMAndMinv();
+}
+
+function setProjection() {
+
+  // Set bounds for projection.
+  viewerDist = length(subtract(e, a));
+  near = viewerDist - 1.5;
+  far = viewerDist + 1.5;
+
+  // Perspecive projection bounds.
+  perTop = near * Math.tan(Math.PI/4);
+  perBottom = -perTop;
+  perRight = perTop;
+  perLeft = -perRight;
+
+  getPerspective();
+}
+
 function getVertices() {
-    var vertexPositionData = [];
-    var normalData = [];
-    var textureCoordData = [];
+    var vertexPositions = [];
+    var textureCoords = [];
     for (var latNumber = 0; latNumber <= latitudeBands; latNumber++) {
       var theta = latNumber * Math.PI / latitudeBands;
       var sinTheta = Math.sin(theta);
@@ -195,37 +189,31 @@ function getVertices() {
         var u = 1 - (longNumber / longitudeBands);
         var v = 1 - (latNumber / latitudeBands);
 
-        normalData.push(x);
-        normalData.push(y);
-        normalData.push(z);
-        textureCoordData.push(u);
-        textureCoordData.push(v);
-        vertexPositionData.push(radius * x);
-        vertexPositionData.push(radius * y);
-        vertexPositionData.push(radius * z);
+        textureCoords.push(u);
+        textureCoords.push(v);
+        vertexPositions.push(radius * x);
+        vertexPositions.push(radius * y);
+        vertexPositions.push(radius * z);
       }
     }
-    vertNormals = normalData;
-    return vertexPositionData;
-
+    return vertexPositions;
 }
 
-function getIndices() {
-  var indexData = [];
+function getSphereIndices() {
+  var indices = [];
    for (var latNumber = 0; latNumber < latitudeBands; latNumber++) {
      for (var longNumber = 0; longNumber < longitudeBands; longNumber++) {
        var first = (latNumber * (longitudeBands + 1)) + longNumber;
        var second = first + longitudeBands + 1;
-       indexData.push(first);
-       indexData.push(second);
-       indexData.push(first + 1);
-
-       indexData.push(second);
-       indexData.push(second + 1);
-       indexData.push(first + 1);
+       indices.push(first);
+       indices.push(second);
+       indices.push(first + 1);
+       indices.push(second);
+       indices.push(second + 1);
+       indices.push(first + 1);
      }
    }
-   return indexData;
+   return indices;
 }
 
 /* A convoluded function that returns a list of vertex normals.
@@ -237,12 +225,12 @@ function generateNormals() {
     var faceNormals = [];
     for (var j = 0; j < indexList.length; j+=3) {
       if (indexList[j] === i || indexList[j+1] === i || indexList[j+2] === i) {
-        let fourTimesInd = 4*indexList[j];
-        let p0 = vec3(flatVertices[fourTimesInd], flatVertices[fourTimesInd+1], flatVertices[fourTimesInd+2]);
-        fourTimesInd = 4*indexList[j+1];
-        let p1 = vec3(flatVertices[fourTimesInd], flatVertices[fourTimesInd+1], flatVertices[fourTimesInd+2]);
-        fourTimesInd = 4*indexList[j+2];
-        let p2 = vec3(flatVertices[fourTimesInd], flatVertices[fourTimesInd+1], flatVertices[fourTimesInd+2]);
+        let threeTimesInd = 3*indexList[j];
+        let p0 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
+        threeTimesInd = 3*indexList[j+1];
+        let p1 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
+        threeTimesInd = 3*indexList[j+2];
+        let p2 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
         let v1= subtract(p1, p0);
         let v2 = subtract(p2, p0);
         faceNormals.push(cross(v1, v2));
@@ -262,7 +250,7 @@ function generateNormals() {
 
 function drawObject() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-    gl.drawElements( gl.TRIANGLES, vertices.length/3, gl.UNSIGNED_SHORT, 0 )
+    gl.drawElements( gl.TRIANGLES, indexList.length, gl.UNSIGNED_SHORT, 0 )
 }
 
 /* Sets the matrices used for transformations. */
@@ -295,42 +283,13 @@ function calcMAndMinv() {
 }
 
 /* Sets the projection matrices. */
-function calcPorthAndPper() {
-  Porth = [
-    2/(orthRight-orthLeft), 0, 0, 0,
-    0, 2/(orthTop-orthBottom), 0, 0,
-    0, 0, -2/(far-near), 0,
-    -(orthLeft+orthRight)/(orthLeft-orthRight), -(orthTop+orthBottom)/(orthTop-orthBottom), -(far+near)/(far-near), 1
-  ];
-
+function getPerspective() {
   Pper = [
     near/perRight, 0, 0, 0,
     0, near/perTop, 0, 0,
     0, 0, -(far+near)/(far-near), -1,
     0, 0, -(2*far*near)/(far-near), 0
   ];
-}
-
-/* Updates the object after changing projection type. */
-function update(event) {
-  if (event.keyCode == 79) {
-    gl.uniformMatrix4fv(PLoc, false, Porth);
-    drawObject();
-  } else if (event.keyCode == 80) {
-    gl.uniformMatrix4fv(PLoc, false, Pper);
-    drawObject();
-  }
-}
-
-/* Toggles the specular projection */
-function toggleSpecular() {
-    if (specular) {
-      gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
-    } else {
-      gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
-    }
-    specular = !specular;
-    drawObject();
 }
 
 /* Retrieves uniform locations */
@@ -374,26 +333,4 @@ function enableDirectionalLight() {
 /* Disables directional light */
 function disableDirectionalLight() {
   gl.uniform3f(directionColorLoc, 0.0, 0.0, 0.0);
-}
-
-/* Toggles the point light */
-function togglePointLight() {
-  if (pointOn) {
-    disablePointLight();
-  } else {
-    enablePointLight();
-  }
-  pointOn = !pointOn;
-  drawObject();
-}
-
-/* Toggles the directional light */
-function toggleDirectionalLight() {
-  if (directionOn) {
-    disableDirectionalLight();
-  } else {
-    enableDirectionalLight();
-  }
-  directionOn = !directionOn;
-  drawObject();
 }
