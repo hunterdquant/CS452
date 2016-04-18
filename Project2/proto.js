@@ -2,19 +2,6 @@
 
 // GL
 var gl;
-// Graphics Shader
-var myShaderProgram
-// Number of vertices in the shape and the number of polygons.
-var numVertices;
-var numTriangles;
-// A transposed list of vertices.
-var vertices;
-// A list of all vertices.
-var vertices;
-// Associates vertices with points in a triangle.
-var indexList;
-// A list of all vertex normals.
-var vertNormals;
 
 // A matrix representing the model view transformation transpoed and inverse.
 // for lighting calculations.
@@ -38,21 +25,20 @@ var perLeft, perRight, perTop, perBottom;
 // Distance bounds
 var near, far;
 
+var indexBuffer;
+var verticesBuffer;
+var normalsBuffer;
+
 // Uniform locations that need to be altered.
 var PLoc, alphaLoc, IaLoc, IdLoc, IsLoc, kaLoc, kdLoc, ksLoc, p0Loc;
 
 // Point light along with its intensity, reflectance coefficients, and on state.
 var p0;
-var pointOn;
 var Ia, Id, Is;
 var ka, kd, ks;
 
 // Shiny factor.
 var alpha;
-// A boolean for whether specularity is currently on.
-var specular;
-// A copy of the specular reflectance coefficient for toggling.
-var spcularVals;
 
 // Directional light with its direction, color, and on state.
 // diffuse only.
@@ -70,67 +56,26 @@ var star;
 var box;
 var shards;
 
-function initGL(){
-    var canvas = document.getElementById( "gl-canvas" );
+function initGL() {
+  var canvas = document.getElementById("gl-canvas");
 
-    gl = WebGLUtils.setupWebGL( canvas );
-    if ( !gl ) { alert( "WebGL isn't available" ); }
+  gl = WebGLUtils.setupWebGL(canvas);
+  if (!gl) {
+    alert("WebGL isn't available");
+  }
 
-    gl.enable(gl.DEPTH_TEST);
-    gl.viewport( 0, 0, 512, 512 );
-    gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+  gl.enable(gl.DEPTH_TEST);
+  gl.viewport(0, 0, 512, 512);
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
-    setModelView();
-    setProjection();
-    setUpLighting();
-    createGeometry();
-    initTextures();
+  setModelView();
+  setProjection();
+  setUpLighting();
+  createGeometry();
+  createBuffers();
+  initTextures();
 
-    // Below is all of the accessing of the GPU
-    myShaderProgram = initShaders( gl, "vertex-shader", "fragment-shader" );
-    gl.useProgram( myShaderProgram );
-    vertices = getSphereVertices(); // vertices and faces are defined in object.js
-    indexList = getSphereIndices();
-    vertNormals = generateNormals();
-    var indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indexList), gl.STATIC_DRAW);
-
-    var verticesBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-    var vertexPosition = gl.getAttribLocation(myShaderProgram,"vertexPosition");
-    gl.vertexAttribPointer( vertexPosition, 3, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( vertexPosition );
-
-    var normalsBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(vertNormals)), gl.STATIC_DRAW);
-
-    var nvPosition = gl.getAttribLocation(myShaderProgram,"nv");
-    gl.vertexAttribPointer( nvPosition, 3, gl.FLOAT, false, 0, 0 );
-    gl.enableVertexAttribArray( nvPosition );
-
-    // Insert your code here
-    var MLoc = gl.getUniformLocation(myShaderProgram, "M");
-    gl.uniformMatrix4fv(MLoc, false, M);
-
-    var MinvTransLoc = gl.getUniformLocation(myShaderProgram, "MinvTrans");
-    gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
-
-    PLoc = gl.getUniformLocation(myShaderProgram, "P");
-    gl.uniformMatrix4fv(PLoc, false, Pper);
-    getNeededLocations();
-    enablePointLight();
-    enableDirectionalLight();
-
-    alphaLoc = gl.getUniformLocation(myShaderProgram, "alpha");
-    gl.uniform1f(alphaLoc, alpha);
-
-    //
-
-    drawObject();
+  renderObjects();
 };
 
 function setModelView() {
@@ -150,7 +95,7 @@ function setProjection() {
   far = viewerDist + 1.5;
 
   // Perspecive projection bounds.
-  perTop = near * Math.tan(Math.PI/4);
+  perTop = near * Math.tan(Math.PI / 4);
   perBottom = -perTop;
   perRight = perTop;
   perLeft = -perRight;
@@ -172,8 +117,7 @@ function setUpLighting() {
   ks = vec3(1.0, 1.0, 1.0);
 
   // Shine value and specular state.
-  alpha = 5.0;
-  specular = true;
+  alpha = 8.0;
 
   // Direction and color value for the diffuse directional light.
   lightDirection = vec3(0.0, 0.0, 1.0);
@@ -183,73 +127,131 @@ function setUpLighting() {
 
 
 function createGeometry() {
-
+  var ellipsoidVerts = getSphereVertices(true);
+  var sphereInds = getSphereIndices();
+  ellipsoid = {
+    vertices: ellipsoidVerts,
+    indexList: sphereInds,
+    normals: getNormals(ellipsoidVerts, sphereInds),
+    program: initShaders(gl, "vertex-shader", "fragment-shader"),
+    vertDim: 3,
+    numElems: sphereInds.length
+  }
 }
 
-function getSphereVertices() {
+function createBuffers() {
 
-    var vertPositions = [];
-    var texCoords = [];
-    for (var latNumber = 0; latNumber <= latBands; latNumber++) {
-      var theta = latNumber * Math.PI / latBands;
-      var sinTheta = Math.sin(theta);
-      var cosTheta = Math.cos(theta);
+  indexBuffer = gl.createBuffer();
+  verticesBuffer = gl.createBuffer();
+  normalsBuffer = gl.createBuffer();
+}
 
-      for (var longNumber = 0; longNumber <= longBands; longNumber++) {
-        var phi = longNumber * 2 * Math.PI / longBands;
-        var sinPhi = Math.sin(phi);
-        var cosPhi = Math.cos(phi);
+function drawEllipsoid() {
 
-        var x = cosPhi * sinTheta;
-        var y = cosTheta;
-        var z = sinPhi * sinTheta;
+  gl.useProgram(ellipsoid.program);
 
-        var s = 1 - (longNumber / longBands);
-        var t = 1 - (latNumber / latBands);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ellipsoid.indexList), gl.STATIC_DRAW);
 
-        texCoords.push(s);
-        texCoords.push(t);
-        vertPositions.push(radius * x);
-        vertPositions.push(2*radius * y);
-        vertPositions.push(radius * z);
+  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ellipsoid.vertices), gl.STATIC_DRAW);
+  var vertexPosition = gl.getAttribLocation(ellipsoid.program, "vertexPosition");
+  gl.vertexAttribPointer(vertexPosition, ellipsoid.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(ellipsoid.normals)), gl.STATIC_DRAW);
+  var nvPosition = gl.getAttribLocation(ellipsoid.program, "nv");
+  gl.vertexAttribPointer(nvPosition, ellipsoid.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(nvPosition);
+
+  // Insert your code here
+  var MLoc = gl.getUniformLocation(ellipsoid.program, "M");
+  gl.uniformMatrix4fv(MLoc, false, M);
+
+  var MinvTransLoc = gl.getUniformLocation(ellipsoid.program, "MinvTrans");
+  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  PLoc = gl.getUniformLocation(ellipsoid.program, "P");
+  gl.uniformMatrix4fv(PLoc, false, Pper);
+  getNeededLocations();
+  enablePointLight();
+  enableDirectionalLight();
+
+  alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
+  gl.uniform1f(alphaLoc, alpha);
+
+  gl.drawElements(gl.TRIANGLES, ellipsoid.indexList.length, gl.UNSIGNED_SHORT, 0);
+}
+
+function getSphereVertices(isEllipse) {
+
+  var vertPositions = [];
+  var texCoords = [];
+  for (var latNumber = 0; latNumber <= latBands; latNumber++) {
+    var theta = latNumber * Math.PI / latBands;
+    var sinTheta = Math.sin(theta);
+    var cosTheta = Math.cos(theta);
+
+    for (var longNumber = 0; longNumber <= longBands; longNumber++) {
+      var phi = longNumber * 2 * Math.PI / longBands;
+      var sinPhi = Math.sin(phi);
+      var cosPhi = Math.cos(phi);
+
+      var x = cosPhi * sinTheta;
+      var y = cosTheta;
+      var z = sinPhi * sinTheta;
+
+      var s = 1 - (longNumber / longBands);
+      var t = 1 - (latNumber / latBands);
+
+      texCoords.push(s);
+      texCoords.push(t);
+      vertPositions.push(radius * x);
+      if (isEllipse) {
+        vertPositions.push(2 * radius * y);
+      } else {
+        vertPositions.push(radius * y);
       }
+      vertPositions.push(radius * z);
     }
-    return vertPositions;
+  }
+  return vertPositions;
 }
 
 function getSphereIndices() {
   var indices = [];
-   for (var latNumber = 0; latNumber < latBands; latNumber++) {
-     for (var longNumber = 0; longNumber < longBands; longNumber++) {
-       var first = (latNumber * (longBands + 1)) + longNumber;
-       var second = first + longBands + 1;
-       indices.push(first);
-       indices.push(second);
-       indices.push(first + 1);
-       indices.push(second);
-       indices.push(second + 1);
-       indices.push(first + 1);
-     }
-   }
-   return indices;
+  for (var latNumber = 0; latNumber < latBands; latNumber++) {
+    for (var longNumber = 0; longNumber < longBands; longNumber++) {
+      var first = (latNumber * (longBands + 1)) + longNumber;
+      var second = first + longBands + 1;
+      indices.push(first);
+      indices.push(second);
+      indices.push(first + 1);
+      indices.push(second);
+      indices.push(second + 1);
+      indices.push(first + 1);
+    }
+  }
+  return indices;
 }
 
 /* A convoluded function that returns a list of vertex normals.
     Iterates through all the points and caclulates all the face normals around
     it then uses those face normals to create the vertex normal.*/
-function generateNormals() {
+function getNormals(vertices, indexList) {
   var vertNormals = [];
   for (var i = 0; i < vertices.length; i++) {
     var faceNormals = [];
-    for (var j = 0; j < indexList.length; j+=3) {
-      if (indexList[j] === i || indexList[j+1] === i || indexList[j+2] === i) {
-        let threeTimesInd = 3*indexList[j];
-        let p0 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
-        threeTimesInd = 3*indexList[j+1];
-        let p1 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
-        threeTimesInd = 3*indexList[j+2];
-        let p2 = vec3(vertices[threeTimesInd], vertices[threeTimesInd+1], vertices[threeTimesInd+2]);
-        let v1= subtract(p1, p0);
+    for (var j = 0; j < indexList.length; j += 3) {
+      if (indexList[j] === i || indexList[j + 1] === i || indexList[j + 2] === i) {
+        let threeTimesInd = 3 * indexList[j];
+        let p0 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        threeTimesInd = 3 * indexList[j + 1];
+        let p1 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        threeTimesInd = 3 * indexList[j + 2];
+        let p2 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        let v1 = subtract(p1, p0);
         let v2 = subtract(p2, p0);
         faceNormals.push(cross(v1, v2));
       }
@@ -266,12 +268,13 @@ function generateNormals() {
 }
 
 function initTextures() {
-  
+
 }
 
-function drawObject() {
-    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-    gl.drawElements( gl.TRIANGLES, indexList.length, gl.UNSIGNED_SHORT, 0 )
+function renderObjects() {
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  drawEllipsoid();
+  requestAnimFrame(renderObjects);
 }
 
 /* Sets the matrices used for transformations. */
@@ -284,15 +287,15 @@ function calcMAndMinv() {
 
   // The inverse rotation matrix.
   var camRotInv = mat4(u[0], u[1], u[2], 0,
-                    v[0], v[1], v[2], 0,
-                    n[0], n[1], n[2], 0,
-                    0, 0, 0, 1);
+    v[0], v[1], v[2], 0,
+    n[0], n[1], n[2], 0,
+    0, 0, 0, 1);
 
   // The inverse translation matrix.
   var camTransInv = mat4(1, 0, 0, -e[0],
-                         0, 1, 0, -e[1],
-                         0, 0, 1, -e[2],
-                         0, 0, 0, 1);
+    0, 1, 0, -e[1],
+    0, 0, 1, -e[2],
+    0, 0, 0, 1);
 
   M = flatten(mult(camRotInv, camTransInv));
   MinvTrans = [
@@ -306,22 +309,22 @@ function calcMAndMinv() {
 /* Sets the projection matrices. */
 function getPerspective() {
   Pper = [
-    near/perRight, 0, 0, 0,
-    0, near/perTop, 0, 0,
-    0, 0, -(far+near)/(far-near), -1,
-    0, 0, -(2*far*near)/(far-near), 0
+    near / perRight, 0, 0, 0,
+    0, near / perTop, 0, 0,
+    0, 0, -(far + near) / (far - near), -1,
+    0, 0, -(2 * far * near) / (far - near), 0
   ];
 }
 
 /* Retrieves uniform locations */
 function getNeededLocations() {
-  p0Loc = gl.getUniformLocation(myShaderProgram, "p0");
-  IaLoc = gl.getUniformLocation(myShaderProgram, "Ia");
-  IdLoc = gl.getUniformLocation(myShaderProgram, "Id");
-  IsLoc = gl.getUniformLocation(myShaderProgram, "Is");
-  kaLoc = gl.getUniformLocation(myShaderProgram, "ka");
-  kdLoc = gl.getUniformLocation(myShaderProgram, "kd");
-  ksLoc = gl.getUniformLocation(myShaderProgram, "ks");
+  p0Loc = gl.getUniformLocation(ellipsoid.program, "p0");
+  IaLoc = gl.getUniformLocation(ellipsoid.program, "Ia");
+  IdLoc = gl.getUniformLocation(ellipsoid.program, "Id");
+  IsLoc = gl.getUniformLocation(ellipsoid.program, "Is");
+  kaLoc = gl.getUniformLocation(ellipsoid.program, "ka");
+  kdLoc = gl.getUniformLocation(ellipsoid.program, "kd");
+  ksLoc = gl.getUniformLocation(ellipsoid.program, "ks");
 }
 
 /* Enables the point light */
@@ -344,10 +347,10 @@ function disablePointLight() {
 
 /* Enables directional light */
 function enableDirectionalLight() {
-  lightDirectionLoc = gl.getUniformLocation(myShaderProgram, "lightDirection");
+  lightDirectionLoc = gl.getUniformLocation(ellipsoid.program, "lightDirection");
   gl.uniform3f(lightDirectionLoc, lightDirection[0], lightDirection[1], lightDirection[2]);
 
-  directionColorLoc = gl.getUniformLocation(myShaderProgram, "directionColor");
+  directionColorLoc = gl.getUniformLocation(ellipsoid.program, "directionColor");
   gl.uniform3f(directionColorLoc, directionColor[0], directionColor[1], directionColor[2]);
 }
 
