@@ -31,6 +31,7 @@ var verticesBuffer;
 var normalsBuffer;
 var texCoordBuffer;
 
+var cubMap;
 var boxTextures;
 var images;
 
@@ -66,6 +67,7 @@ var mouseX;
 var mouseY;
 
 var sceneRotation;
+var sceneRotationInv;
 var sceneAlpha;
 var sceneBeta;
 
@@ -82,10 +84,18 @@ function initGL() {
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
 
+  boxTextures = [];
+
   isMouseDown = false;
   mouseX = null;
   mouseY = null;
   sceneRotation = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+  sceneRotationInv = mat4(
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0,
@@ -153,7 +163,7 @@ function setUpLighting() {
 
 
 function createGeometry() {
-  var ellipsoidVerts = getSphereVertices(true);
+  var ellipsoidVerts = getSphereVertices(false);
   var sphereInds = getSphereIndices();
   ellipsoid = {
     vertices: ellipsoidVerts,
@@ -166,30 +176,30 @@ function createGeometry() {
   //box bound
   var bb = 32.0;
   box = {
-    front: [-bb, -bb, -bb,
-            bb, -bb, -bb,
-            bb, bb, -bb,
-            -bb, bb, -bb],
-    right: [bb, -bb, -bb,
-            bb, -bb, bb,
-            bb, bb, bb,
-            bb, bb, -bb],
-    back: [bb, -bb, bb,
-           -bb, -bb, bb,
-            -bb, bb, bb,
-            bb, bb, bb],
-    left: [-bb, -bb, bb,
-            -bb, -bb, -bb,
-            -bb, bb, -bb,
-            -bb, bb, bb],
-    top: [-bb, bb, -bb,
-          bb, bb, -bb,
-          bb, bb, bb,
-          -bb, bb, bb],
-    bottom: [-bb, -bb, bb,
-              bb, -bb, bb,
-              bb, -bb, -bb,
-              -bb, -bb, -bb],
+    front: [-bb, -bb, -bb+0.5,
+            bb, -bb, -bb+0.5,
+            bb, bb, -bb+0.5,
+            -bb, bb, -bb+0.5],
+    right: [bb-0.5, -bb, -bb,
+            bb-0.5, -bb, bb,
+            bb-0.5, bb, bb,
+            bb-0.5, bb, -bb],
+    back: [bb, -bb, bb-0.5,
+           -bb, -bb, bb-0.5,
+            -bb, bb, bb-0.5,
+            bb, bb, bb-0.5],
+    left: [-bb+0.5, -bb, bb,
+            -bb+0.5, -bb, -bb,
+            -bb+0.5, bb, -bb,
+            -bb+0.5, bb, bb],
+    top: [-bb, bb-0.5, -bb,
+          bb, bb-0.5, -bb,
+          bb, bb-0.5, bb,
+          -bb, bb-0.5, bb],
+    bottom: [-bb, -bb+0.5, bb,
+              bb, -bb+0.5, bb,
+              bb, -bb+0.5, -bb,
+              -bb, -bb+0.5, -bb],
     indexList: [0, 1, 2,
                 0, 2, 3],
     texCoords: [0.0, 0.0,
@@ -232,16 +242,16 @@ function drawBox() {
   PLoc = gl.getUniformLocation(box.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
-  for (var i = 1; i < 7; i++) {
+  for (var i = 0; i < 6; i++) {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.verts[i-1]), gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.verts[i]), gl.STATIC_DRAW);
     var vertexPosition = gl.getAttribLocation(box.program, "vertexPosition");
     gl.vertexAttribPointer(vertexPosition, box.vertDim, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vertexPosition);
 
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, textures[i]);
+    gl.bindTexture(gl.TEXTURE_2D, boxTextures[i]);
     gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.texCoords), gl.STATIC_DRAW);
     var texCoordLocation = gl.getAttribLocation(box.program, "texCoord");
@@ -250,7 +260,6 @@ function drawBox() {
 
     gl.drawElements(gl.TRIANGLES, box.numElems, gl.UNSIGNED_SHORT, 0);
   }
-
 }
 
 function drawEllipsoid() {
@@ -258,7 +267,7 @@ function drawEllipsoid() {
   gl.useProgram(ellipsoid.program);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_CUBE_MAP, textures[0]);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ellipsoid.indexList), gl.STATIC_DRAW);
@@ -284,6 +293,9 @@ function drawEllipsoid() {
 
   var MinvTransLoc = gl.getUniformLocation(ellipsoid.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  var SRotInvLoc = gl.getUniformLocation(ellipsoid.program, "SRotInv");
+  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
 
   PLoc = gl.getUniformLocation(ellipsoid.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
@@ -382,30 +394,28 @@ function getNormals(vertices, indexList) {
 }
 
 function initTextures() {
-    images = [document.getElementById("front"),
+    images = [
+    document.getElementById("front"),
     document.getElementById("right"),
     document.getElementById("back"),
     document.getElementById("left"),
     document.getElementById("top"),
     document.getElementById("bottom")];
 
+  boxTextures = [];
 
-  textures = [];
-
-  var cubeMap = gl.createTexture();
+  cubeMap = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[0]);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[1]);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[2]);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[3]);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
-
-  textures.push(cubeMap);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[0]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[1]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[2]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[3]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
 
   for (var i = 0; i < 6; i++) {
     textureImage = gl.createTexture();
@@ -414,7 +424,7 @@ function initTextures() {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    textures.push(textureImage);
+    boxTextures.push(textureImage);
   }
 }
 
@@ -422,6 +432,7 @@ function renderObjects() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   drawBox();
   drawEllipsoid();
+
   requestAnimFrame(renderObjects);
 }
 
@@ -523,7 +534,7 @@ function onMouseDrag(event) {
     var y = event.clientY;
 
     var changeX = (x - mouseX)*Math.PI/canvas.width;
-    var changeY = (y - mouseY)*Math.PI/canvas.height;
+    var changeY = (mouseY - y)*Math.PI/canvas.height;
 
     var s = Math.sin(changeX);
     var c = Math.cos(changeX);
@@ -531,6 +542,11 @@ function onMouseDrag(event) {
                     0.0, 1.0, 0.0, 0.0,
                     -s, 0.0, c, 0.0,
                     0.0, 0.0, 0.0, 1.0);
+    var yRotInv = mat4(c, 0.0, -s, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    s, 0.0, c, 0.0,
+                    0.0, 0.0, 0.0, 1.0);
+
 
 
     s = Math.sin(changeY);
@@ -540,9 +556,14 @@ function onMouseDrag(event) {
                     0.0, -s, c, 0.0,
                     0.0, 0.0, 0.0, 1.0);
 
+    var xRotInv = mat4(1.0, 0.0, 0.0, 0.0,
+                0.0, c, -s, 0.0,
+                0.0, s, c, 0.0,
+                0.0, 0.0, 0.0, 1.0);
+
 
     sceneRotation = mult(mult(yRot, xRot), sceneRotation);
-
+    sceneRotationInv = mult(sceneRotationInv, mult(xRotInv, yRotInv));
     mouseX = x;
     mouseY = y;
   }
