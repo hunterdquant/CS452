@@ -102,7 +102,7 @@ function initGL() {
   initTextures();
 
   renderObjects();
-};
+}
 
 function setModelView() {
   // viewer point, look-at point, up direction.
@@ -118,7 +118,7 @@ function setProjection() {
   // Set bounds for projection.
   viewerDist = length(subtract(e, a));
   near = viewerDist - 6;
-  far = viewerDist + 30;
+  far = viewerDist + 64;
 
   // Perspecive projection bounds.
   perTop = near * Math.tan(Math.PI / 4);
@@ -162,9 +162,9 @@ function createGeometry() {
     program: initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader"),
     vertDim: 3,
     numElems: sphereInds.length
-  }
+  };
   //box bound
-  var bb = 16.0;
+  var bb = 32.0;
   box = {
     front: [-bb, -bb, -bb,
             bb, -bb, -bb,
@@ -193,13 +193,13 @@ function createGeometry() {
     indexList: [0, 1, 2,
                 0, 2, 3],
     texCoords: [0.0, 0.0,
-                0.0, 1.0,
+                1.0, 0.0,
                 1.0, 1.0,
-                1.0, 0.0],
+                0.0, 1.0],
     program: initShaders(gl, "box-vertex-shader", "box-fragment-shader"),
     vertDim: 3,
     numElems: 6
-  }
+  };
 
   box.verts = [box.front, box.right, box.back, box.left, box.top, box.bottom];
 }
@@ -257,6 +257,9 @@ function drawEllipsoid() {
 
   gl.useProgram(ellipsoid.program);
 
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, textures[0]);
+
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(ellipsoid.indexList), gl.STATIC_DRAW);
 
@@ -290,9 +293,6 @@ function drawEllipsoid() {
 
   alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
   gl.uniform1f(alphaLoc, alpha);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_CUBE_MAP, textures[0]);
 
   cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
   gl.uniform1i(cubeTexMapLoc, 0);
@@ -371,7 +371,7 @@ function getNormals(vertices, indexList) {
       }
     }
     var vertNormal = vec3(0, 0, 0);
-    for (var j = 0; j < faceNormals.length; j++) {
+    for (j = 0; j < faceNormals.length; j++) {
       vertNormal = add(vertNormal, faceNormals[j]);
     }
     vertNormal = normalize(vertNormal);
