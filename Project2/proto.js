@@ -106,7 +106,7 @@ function initGL() {
 
 function setModelView() {
   // viewer point, look-at point, up direction.
-  e = vec3(0.0, 0.0, 13.0);
+  e = vec3(0.0, 0.0, 8.0);
   a = vec3(0.0, 0.0, 0.0);
   vup = vec3(0.0, 1.0, 0.0);
 
@@ -117,8 +117,8 @@ function setProjection() {
 
   // Set bounds for projection.
   viewerDist = length(subtract(e, a));
-  near = viewerDist - 12;
-  far = viewerDist + 12;
+  near = viewerDist - 6;
+  far = viewerDist + 30;
 
   // Perspecive projection bounds.
   perTop = near * Math.tan(Math.PI / 4);
@@ -164,7 +164,7 @@ function createGeometry() {
     numElems: sphereInds.length
   }
   //box bound
-  var bb = 11.0;
+  var bb = 16.0;
   box = {
     front: [-bb, -bb, -bb,
             bb, -bb, -bb,
