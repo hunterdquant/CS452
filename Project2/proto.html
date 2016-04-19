@@ -6,11 +6,14 @@
     precision mediump float;
     attribute vec3 vertexPosition;
     attribute vec2 texCoord;
+    uniform mat4 M;
+    uniform mat4 SRot;
+    uniform mat4 P;
     varying highp vec2 fTexCoord;
     void main() {
       fTexCoord = texCoord;
-      gl_Position = vec4(vertexPosition, 1.0);
-      gl_PointSize = 1.0;
+      vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
+      gl_Position = P * transformedVertPos;
     }
   </script>
   <script id="box-fragment-shader" type="x-shader/x-fragment">
@@ -19,10 +22,7 @@
     varying highp vec2 fTexCoord;
     void main() {
       vec4 color = texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
-      gl_FragColor.r = color.r;
-      gl_FragColor.g = color.g;
-      gl_FragColor.b = color.b;
-      gl_FragColor.a = color.a;
+      gl_FragColor = color;
     }
   </script>
 <script id="ellipsoid-vertex-shader" type="x-shader/x-vertex">

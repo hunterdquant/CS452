@@ -31,6 +31,9 @@ var verticesBuffer;
 var normalsBuffer;
 var texCoordBuffer;
 
+var boxTextures;
+var images;
+
 // Uniform locations that need to be altered.
 var PLoc, alphaLoc, IaLoc, IdLoc, IsLoc, kaLoc, kdLoc, ksLoc, p0Loc;
 
@@ -103,7 +106,7 @@ function initGL() {
 
 function setModelView() {
   // viewer point, look-at point, up direction.
-  e = vec3(0.0, 0.0, 3.0);
+  e = vec3(0.0, 0.0, 13.0);
   a = vec3(0.0, 0.0, 0.0);
   vup = vec3(0.0, 1.0, 0.0);
 
@@ -114,8 +117,8 @@ function setProjection() {
 
   // Set bounds for projection.
   viewerDist = length(subtract(e, a));
-  near = viewerDist - 2;
-  far = viewerDist + 2;
+  near = viewerDist - 12;
+  far = viewerDist + 12;
 
   // Perspecive projection bounds.
   perTop = near * Math.tan(Math.PI / 4);
@@ -160,32 +163,33 @@ function createGeometry() {
     vertDim: 3,
     numElems: sphereInds.length
   }
-
+  //box bound
+  var bb = 11.0;
   box = {
-    front: [-2.0, -2.0, -2.0,
-            2.0, -2.0, -2.0,
-            2.0, 2.0, -2.0,
-            -2.0, 2.0, -2.0],
-    back: [2.0, -2.0, 2.0,
-           -2.0, -2.0, 2.0,
-            -2.0, 2.0, 2.0,
-            2.0, 2.0, 2.0],
-    left: [-2.0, -2.0, 2.0,
-            -2.0, -2.0, -2.0,
-            -2.0, 2.0, -2.0,
-            -2.0, 2.0, 2.0],
-    right: [2.0, -2.0, -2.0,
-            2.0, -2.0, 2.0,
-            2.0, 2.0, 2.0,
-            2.0, 2.0, -2.0],
-    top: [-2.0, 2.0, -2.0,
-          2.0, 2.0, -2.0,
-          2.0, 2.0, 2.0,
-          -2.0, 2.0, 2.0],
-    bottom: [-2.0, -2.0, 2.0,
-              2.0, -2.0, 2.0,
-              2.0, -2.0, -2.0,
-              -2.0, -2.0, -2.0],
+    front: [-bb, -bb, -bb,
+            bb, -bb, -bb,
+            bb, bb, -bb,
+            -bb, bb, -bb],
+    right: [bb, -bb, -bb,
+            bb, -bb, bb,
+            bb, bb, bb,
+            bb, bb, -bb],
+    back: [bb, -bb, bb,
+           -bb, -bb, bb,
+            -bb, bb, bb,
+            bb, bb, bb],
+    left: [-bb, -bb, bb,
+            -bb, -bb, -bb,
+            -bb, bb, -bb,
+            -bb, bb, bb],
+    top: [-bb, bb, -bb,
+          bb, bb, -bb,
+          bb, bb, bb,
+          -bb, bb, bb],
+    bottom: [-bb, -bb, bb,
+              bb, -bb, bb,
+              bb, -bb, -bb,
+              -bb, -bb, -bb],
     indexList: [0, 1, 2,
                 0, 2, 3],
     texCoords: [0.0, 0.0,
@@ -196,6 +200,8 @@ function createGeometry() {
     vertDim: 3,
     numElems: 6
   }
+
+  box.verts = [box.front, box.right, box.back, box.left, box.top, box.bottom];
 }
 
 function createBuffers() {
@@ -207,29 +213,11 @@ function createBuffers() {
 }
 
 function drawBox() {
-  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.texCoords), gl.STATIC_DRAW);
-
-  var texCoordLocation = gl.getAttribLocation(shaderProgram, "texCoord");
-  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(texCoordLocation);
 
   gl.useProgram(box.program);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(box.indexList), gl.STATIC_DRAW);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.vertices), gl.STATIC_DRAW);
-  var vertexPosition = gl.getAttribLocation(box.program, "vertexPosition");
-  gl.vertexAttribPointer(vertexPosition, box.vertDim, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(vertexPosition);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(box.normals)), gl.STATIC_DRAW);
-  var nvPosition = gl.getAttribLocation(box.program, "nv");
-  gl.vertexAttribPointer(nvPosition, box.vertDim, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(nvPosition);
 
   // Insert your code here
   var MLoc = gl.getUniformLocation(box.program, "M");
@@ -244,7 +232,25 @@ function drawBox() {
   PLoc = gl.getUniformLocation(box.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
-  gl.drawElements(gl.TRIANGLES, box.numElems, gl.UNSIGNED_SHORT, 0);
+  for (var i = 1; i < 7; i++) {
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.verts[i-1]), gl.STATIC_DRAW);
+    var vertexPosition = gl.getAttribLocation(box.program, "vertexPosition");
+    gl.vertexAttribPointer(vertexPosition, box.vertDim, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vertexPosition);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, textures[i]);
+    gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.texCoords), gl.STATIC_DRAW);
+    var texCoordLocation = gl.getAttribLocation(box.program, "texCoord");
+    gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(texCoordLocation);
+
+    gl.drawElements(gl.TRIANGLES, box.numElems, gl.UNSIGNED_SHORT, 0);
+  }
+
 }
 
 function drawEllipsoid() {
@@ -285,6 +291,8 @@ function drawEllipsoid() {
   alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
   gl.uniform1f(alphaLoc, alpha);
 
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, textures[0]);
 
   cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
   gl.uniform1i(cubeTexMapLoc, 0);
@@ -374,29 +382,45 @@ function getNormals(vertices, indexList) {
 }
 
 function initTextures() {
-  var frontImage = document.getElementById("front");
-  var rightImage = document.getElementById("right");
-  var backImage = document.getElementById("back");
-  var leftImage = document.getElementById("left");
-  var topImage = document.getElementById("top");
-  var bottomImage = document.getElementById("bottom");
+    images = [document.getElementById("front"),
+    document.getElementById("right"),
+    document.getElementById("back"),
+    document.getElementById("left"),
+    document.getElementById("top"),
+    document.getElementById("bottom")];
+
+
+  textures = [];
 
   var cubeMap = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, rightImage);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, leftImage);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, topImage);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, bottomImage);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, frontImage);
-  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, backImage);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[0]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[1]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[2]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[3]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
+  gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
+
+  textures.push(cubeMap);
+
+  for (var i = 0; i < 6; i++) {
+    textureImage = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, textureImage);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images[i]);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    textures.push(textureImage);
+  }
 }
 
 function renderObjects() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  drawBox();
   drawEllipsoid();
   requestAnimFrame(renderObjects);
 }
