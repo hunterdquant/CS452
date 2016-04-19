@@ -2,6 +2,7 @@
 
 // GL
 var gl;
+var canvas;
 
 // A matrix representing the model view transformation transpoed and inverse.
 // for lighting calculations.
@@ -28,6 +29,7 @@ var near, far;
 var indexBuffer;
 var verticesBuffer;
 var normalsBuffer;
+var texCoordBuffer;
 
 // Uniform locations that need to be altered.
 var PLoc, alphaLoc, IaLoc, IdLoc, IsLoc, kaLoc, kdLoc, ksLoc, p0Loc;
@@ -56,17 +58,38 @@ var star;
 var box;
 var shards;
 
-function initGL() {
-  var canvas = document.getElementById("gl-canvas");
+var isMouseDown;
+var mouseX;
+var mouseY;
 
+var sceneRotation;
+var sceneAlpha;
+var sceneBeta;
+
+function initGL() {
+  canvas = document.getElementById("gl-canvas");
+  canvas.width = window.innerHeight;
+  canvas.height = window.innerHeight;
   gl = WebGLUtils.setupWebGL(canvas);
   if (!gl) {
     alert("WebGL isn't available");
   }
 
   gl.enable(gl.DEPTH_TEST);
-  gl.viewport(0, 0, 512, 512);
+  gl.viewport(0, 0, canvas.width, canvas.height);
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
+
+  isMouseDown = false;
+  mouseX = null;
+  mouseY = null;
+  sceneRotation = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+  sceneAlpha = 0.0;
+  sceneBeta = 0.0;
 
   setModelView();
   setProjection();
@@ -137,6 +160,42 @@ function createGeometry() {
     vertDim: 3,
     numElems: sphereInds.length
   }
+
+  box = {
+    front: [-2.0, -2.0, -2.0,
+            2.0, -2.0, -2.0,
+            2.0, 2.0, -2.0,
+            -2.0, 2.0, -2.0],
+    back: [2.0, -2.0, 2.0,
+           -2.0, -2.0, 2.0,
+            -2.0, 2.0, 2.0,
+            2.0, 2.0, 2.0],
+    left: [-2.0, -2.0, 2.0,
+            -2.0, -2.0, -2.0,
+            -2.0, 2.0, -2.0,
+            -2.0, 2.0, 2.0],
+    right: [2.0, -2.0, -2.0,
+            2.0, -2.0, 2.0,
+            2.0, 2.0, 2.0,
+            2.0, 2.0, -2.0],
+    top: [-2.0, 2.0, -2.0,
+          2.0, 2.0, -2.0,
+          2.0, 2.0, 2.0,
+          -2.0, 2.0, 2.0],
+    bottom: [-2.0, -2.0, 2.0,
+              2.0, -2.0, 2.0,
+              2.0, -2.0, -2.0,
+              -2.0, -2.0, -2.0],
+    indexList: [0, 1, 2,
+                0, 2, 3],
+    texCoords: [0.0, 0.0,
+                0.0, 1.0,
+                1.0, 1.0,
+                1.0, 0.0],
+    program: initShaders(gl, "box-vertex-shader", "box-fragment-shader"),
+    vertDim: 3,
+    numElems: 6
+  }
 }
 
 function createBuffers() {
@@ -144,6 +203,48 @@ function createBuffers() {
   indexBuffer = gl.createBuffer();
   verticesBuffer = gl.createBuffer();
   normalsBuffer = gl.createBuffer();
+  texCoordBuffer = gl.createBuffer();
+}
+
+function drawBox() {
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.texCoords), gl.STATIC_DRAW);
+
+  var texCoordLocation = gl.getAttribLocation(shaderProgram, "texCoord");
+  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(texCoordLocation);
+
+  gl.useProgram(box.program);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(box.indexList), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box.vertices), gl.STATIC_DRAW);
+  var vertexPosition = gl.getAttribLocation(box.program, "vertexPosition");
+  gl.vertexAttribPointer(vertexPosition, box.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(box.normals)), gl.STATIC_DRAW);
+  var nvPosition = gl.getAttribLocation(box.program, "nv");
+  gl.vertexAttribPointer(nvPosition, box.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(nvPosition);
+
+  // Insert your code here
+  var MLoc = gl.getUniformLocation(box.program, "M");
+  gl.uniformMatrix4fv(MLoc, false, M);
+
+  var SRotLoc = gl.getUniformLocation(box.program, "SRot");
+  gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
+
+  var MinvTransLoc = gl.getUniformLocation(box.program, "MinvTrans");
+  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  PLoc = gl.getUniformLocation(box.program, "P");
+  gl.uniformMatrix4fv(PLoc, false, P);
+
+  gl.drawElements(gl.TRIANGLES, box.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
 function drawEllipsoid() {
@@ -169,6 +270,9 @@ function drawEllipsoid() {
   var MLoc = gl.getUniformLocation(ellipsoid.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
+  var SRotLoc = gl.getUniformLocation(ellipsoid.program, "SRot");
+  gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
+
   var MinvTransLoc = gl.getUniformLocation(ellipsoid.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
@@ -181,7 +285,11 @@ function drawEllipsoid() {
   alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
   gl.uniform1f(alphaLoc, alpha);
 
-  gl.drawElements(gl.TRIANGLES, ellipsoid.indexList.length, gl.UNSIGNED_SHORT, 0);
+
+  cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
+  gl.uniform1i(cubeTexMapLoc, 0);
+
+  gl.drawElements(gl.TRIANGLES, ellipsoid.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
 function getSphereVertices(isEllipse) {
@@ -285,9 +393,6 @@ function initTextures() {
   gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, bottomImage);
   gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, frontImage);
   gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, backImage);
-
-  cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
-  gl.uniform1i(cubeTexMapLoc, 0);
 }
 
 function renderObjects() {
@@ -376,4 +481,45 @@ function enableDirectionalLight() {
 /* Disables directional light */
 function disableDirectionalLight() {
   gl.uniform3f(directionColorLoc, 0.0, 0.0, 0.0);
+}
+
+function onMouseDown(event) {
+  isMouseDown = true;
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+}
+
+function onMouseUp(event) {
+  isMouseDown = false;
+}
+
+function onMouseDrag(event) {
+  if (isMouseDown) {
+    var x = event.clientX;
+    var y = event.clientY;
+
+    var changeX = (x - mouseX)*Math.PI/canvas.width;
+    var changeY = (y - mouseY)*Math.PI/canvas.height;
+
+    var s = Math.sin(changeX);
+    var c = Math.cos(changeX);
+    var yRot = mat4(c, 0.0, s, 0.0,
+                    0.0, 1.0, 0.0, 0.0,
+                    -s, 0.0, c, 0.0,
+                    0.0, 0.0, 0.0, 1.0);
+
+
+    s = Math.sin(changeY);
+    c = Math.cos(changeY);
+    var xRot = mat4(1.0, 0.0, 0.0, 0.0,
+                    0.0, c, s, 0.0,
+                    0.0, -s, c, 0.0,
+                    0.0, 0.0, 0.0, 1.0);
+
+
+    sceneRotation = mult(mult(yRot, xRot), sceneRotation);
+
+    mouseX = x;
+    mouseY = y;
+  }
 }
