@@ -8,6 +8,7 @@
     attribute vec2 texCoord;
     uniform mat4 M;
     uniform mat4 SRot;
+    uniform mat4 SRotInv;
     uniform mat4 P;
     varying highp vec2 fTexCoord;
     mat4 proj = mat4(
@@ -37,7 +38,10 @@
   attribute vec3 nv;
 
   uniform mat4 M;
+  uniform mat4 Minv;
   uniform mat4 SRot;
+  uniform mat4 SRotInv;
+  uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
 
@@ -52,10 +56,10 @@
   void main() {
 
     vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
-    v = normalize(vec3(0.0, 0.0, 0.0) - transformedVertPos.xyz);
-    vec4 nv4 = vec4(nv.xyz, 1.0);
-    vec4 nv4transformed = MinvTrans * SRot * nv4;
-    n = normalize(nv4transformed.xyz);
+    v = normalize(SRotInv * Minv * vec4(0.0, 0.0, 0.0, 1.0) - vec4(vertexPosition, 1.0)).xyz;
+    // vec4 nv4 = vec4(nv.xyz, 1.0);
+    // vec4 nv4transformed = MinvTrans * SRot * nv4;
+    n = normalize(vec4(nv.x, nv.y, nv.z, 1.0).xyz);
     gl_Position = proj * P * transformedVertPos;
   }
 </script>
@@ -75,8 +79,7 @@
     vec4 n_n = vec4(normalize(n), 1.0);
     vec4 v_n = vec4(normalize(v), 1.0);
     vec4 i = 2.0 * dot(n_n, v_n) * n_n - v_n;
-
-    vec4 texColor = textureCube(cubeTexMap, (proj * SRotInv * i).xyz);
+    vec4 texColor = textureCube(cubeTexMap, (proj * i).xyz);
     gl_FragColor = texColor;
   }
 </script>

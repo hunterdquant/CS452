@@ -9,6 +9,7 @@ var canvas;
 var MinvTrans;
 // A matrix representing a model view transformation.
 var M;
+var Minv;
 
 // Matrices representing a orthogonal and perspective projection.
 var Porth;
@@ -52,7 +53,7 @@ var lightDirection;
 var directionColor;
 var directionOn;
 
-var radius = 1;
+var radius = 2;
 var latBands = 64;
 var longBands = 64;
 
@@ -68,6 +69,7 @@ var mouseY;
 
 var sceneRotation;
 var sceneRotationInv;
+var sceneRotationInvTrans;
 var sceneAlpha;
 var sceneBeta;
 
@@ -101,6 +103,13 @@ function initGL() {
     0.0, 0.0, 1.0, 0.0,
     0.0, 0.0, 0.0, 1.0
   );
+  sceneRotationInvTrans = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+
   sceneAlpha = 0.0;
   sceneBeta = 0.0;
 
@@ -239,6 +248,9 @@ function drawBox() {
   var MinvTransLoc = gl.getUniformLocation(box.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
+  var MinvLoc = gl.getUniformLocation(box.program, "Minv");
+  gl.uniformMatrix4fv(MinvLoc, false, Minv);
+
   PLoc = gl.getUniformLocation(box.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
@@ -294,8 +306,14 @@ function drawEllipsoid() {
   var MinvTransLoc = gl.getUniformLocation(ellipsoid.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
+  var MinvLoc = gl.getUniformLocation(ellipsoid.program, "Minv");
+  gl.uniformMatrix4fv(MinvLoc, false, Minv);
+
   var SRotInvLoc = gl.getUniformLocation(ellipsoid.program, "SRotInv");
   gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
+
+  var SRotInvTransLoc = gl.getUniformLocation(ellipsoid.program, "SRotInvTrans");
+  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
 
   PLoc = gl.getUniformLocation(ellipsoid.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
@@ -463,6 +481,13 @@ function calcMAndMinv() {
     u[2], v[2], n[2], e[2],
     0, 0, 0, 1
   ];
+
+  Minv = [
+    u[0], u[1], u[2], 0,
+    v[0], v[1], v[2], 0,
+    n[0], n[1], n[2], 0,
+    e[0], e[1], e[2], 0
+  ];
 }
 
 /* Sets the projection matrices. */
@@ -552,7 +577,7 @@ function onMouseDrag(event) {
     s = Math.sin(changeY);
     c = Math.cos(changeY);
     var xRot = mat4(1.0, 0.0, 0.0, 0.0,
-                    0.0, c, s, 0.0,
+                    0.0, c,s, 0.0,
                     0.0, -s, c, 0.0,
                     0.0, 0.0, 0.0, 1.0);
 
@@ -564,6 +589,7 @@ function onMouseDrag(event) {
 
     sceneRotation = mult(mult(yRot, xRot), sceneRotation);
     sceneRotationInv = mult(sceneRotationInv, mult(xRotInv, yRotInv));
+    sceneRotationInvTrans = transpose(sceneRotationInv);
     mouseX = x;
     mouseY = y;
   }
