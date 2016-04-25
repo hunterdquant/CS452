@@ -72,6 +72,7 @@ var sceneRotationInv;
 var sceneRotationInvTrans;
 var sceneAlpha;
 var sceneBeta;
+var scene;
 
 function initGL() {
   canvas = document.getElementById("gl-canvas");
@@ -113,6 +114,8 @@ function initGL() {
   sceneAlpha = 0.0;
   sceneBeta = 0.0;
 
+  scene = "one";
+
   setModelView();
   setProjection();
   setUpLighting();
@@ -120,7 +123,7 @@ function initGL() {
   createBuffers();
   initTextures();
 
-  renderObjects();
+  renderScene1();
 }
 
 function setModelView() {
@@ -446,12 +449,31 @@ function initTextures() {
   }
 }
 
-function renderObjects() {
+function renderScene1() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   drawBox();
   drawEllipsoid();
+  if (scene === "one") {
+    requestAnimFrame(renderScene1);
+  }
+}
 
-  requestAnimFrame(renderObjects);
+function renderScene2() {
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  drawBox();
+  drawEllipsoid();
+  if (scene === "two") {
+    requestAnimFrame(renderScene2);
+  }
+}
+
+function renderScene3() {
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  drawBox();
+  drawEllipsoid();
+  if (scene === "three") {
+    requestAnimFrame(renderScene3);
+  }
 }
 
 /* Sets the matrices used for transformations. */
@@ -593,4 +615,9 @@ function onMouseDrag(event) {
     mouseX = x;
     mouseY = y;
   }
+}
+
+function changeScene(event) {
+  scene = "two";
+  renderScene2();
 }

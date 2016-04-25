@@ -57,8 +57,6 @@
 
     vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
     v = normalize(SRotInv * Minv * vec4(0.0, 0.0, 0.0, 1.0) - vec4(vertexPosition, 1.0)).xyz;
-    // vec4 nv4 = vec4(nv.xyz, 1.0);
-    // vec4 nv4transformed = MinvTrans * SRot * nv4;
     n = normalize(vec4(nv.x, nv.y, nv.z, 1.0).xyz);
     gl_Position = proj * P * transformedVertPos;
   }
@@ -188,7 +186,7 @@
 
 </head>
 
-<body onload = "initGL()">
+<body onload = "initGL()" onkeydown="changeScene(event)">
     <img src="images/front.jpg" id="front" hidden />
     <img src="images/right.jpg" id="right" hidden />
     <img src="images/back.jpg" id="back" hidden />
