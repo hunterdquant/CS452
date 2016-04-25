@@ -57,7 +57,7 @@
 
     vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
     v = normalize(SRotInv * Minv * vec4(0.0, 0.0, 0.0, 1.0) - vec4(vertexPosition, 1.0)).xyz;
-    n = normalize(vec4(nv.x, nv.y, nv.z, 1.0).xyz);
+    n = normalize(vec4(nv.x, nv.y, nv.z, 1.0)).xyz;
     gl_Position = proj * P * transformedVertPos;
   }
 </script>

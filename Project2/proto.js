@@ -32,12 +32,10 @@ var verticesBuffer;
 var normalsBuffer;
 var texCoordBuffer;
 
-var cubMap;
+var cubeMap;
 var boxTextures;
 var images;
-
-// Uniform locations that need to be altered.
-var PLoc, alphaLoc, IaLoc, IdLoc, IsLoc, kaLoc, kdLoc, ksLoc, p0Loc;
+var sphereTexture;
 
 // Point light along with its intensity, reflectance coefficients, and on state.
 var p0;
@@ -175,24 +173,21 @@ function setUpLighting() {
 
 
 function createGeometry() {
-  var ellipsoidVerts = getSphereData(true);
   var sphereInds = getSphereIndices();
-  ellipsoid = {
-    vertices: ellipsoidVerts,
-    indexList: sphereInds,
-    normals: getNormals(ellipsoidVerts, sphereInds),
-    program: initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader"),
-    vertDim: 3,
-    numElems: sphereInds.length
-  };
-  sphere = {
-    vertices: ellipsoidVerts,
-    indexList: sphereInds,
-    normals: getNormals(ellipsoidVerts, sphereInds),
-    program: initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader"),
-    vertDim: 3,
-    numElems: sphereInds.length
-  };
+  ellipsoid = {};
+  getSphereData(true, ellipsoid);
+  ellipsoid.indexList = sphereInds;
+  ellipsoid.normals = getNormals(ellipsoid.vertices, sphereInds);
+  ellipsoid.program = initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader");
+  ellipsoid.vertDim = 3;
+  ellipsoid.numElems = sphereInds.length;
+  sphere = {};
+  getSphereData(false, sphere);
+  sphere.indexList = sphereInds;
+  sphere.normals = getNormals(sphere.vertices, sphereInds);
+  sphere.program = initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader");
+  sphere.vertDim = 3;
+  sphere.numElems = sphereInds.length;
 
   //box bound
   var bb = 32.0;
@@ -383,19 +378,15 @@ function drawsphere() {
   PLoc = gl.getUniformLocation(sphere.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
-  alphaLoc = gl.getUniformLocation(sphere.program, "alpha");
-  gl.uniform1f(alphaLoc, alpha);
-
-  cubeTexMapLoc = gl.getUniformLocation(sphere.program, "cubeTexMap");
-  gl.uniform1i(cubeTexMapLoc, 0);
-
   gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
-function getSphereData(isEllipse) {
+function getSphereData(isEllipse, sphere) {
 
-  var vertPositions = [];
-  var texCoords = [];
+  sphere.vertices = [];
+  if (!isEllipse) {
+    sphere.texCoords = [];
+  }
   for (var latNumber = 0; latNumber <= latBands; latNumber++) {
     var theta = latNumber * Math.PI / latBands;
     var sinTheta = Math.sin(theta);
@@ -410,19 +401,18 @@ function getSphereData(isEllipse) {
       var y = cosTheta;
       var z = sinPhi * sinTheta;
       if (!isEllipse) {
-        texCoords.push(1 - (longNumber / longBands));
-        texCoords.push(1 - (latNumber / latBands));
+        sphere.texCoords.push(1 - (longNumber / longBands));
+        sphere.texCoords.push(1 - (latNumber / latBands));
       }
-      vertPositions.push(radius * x);
+      sphere.vertices.push(radius * x);
       if (isEllipse) {
-        vertPositions.push(2 * radius * y);
+        sphere.vertices.push(2 * radius * y);
       } else {
-        vertPositions.push(radius * y);
+        sphere.vertices.push(radius * y);
       }
-      vertPositions.push(radius * z);
+      sphere.vertices.push(radius * z);
     }
   }
-  return vertPositions;
 }
 
 function getSphereIndices() {
@@ -506,6 +496,8 @@ function initTextures() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     boxTextures.push(textureImage);
   }
+
+  sphereTexture = gl.createTexture();
 }
 
 function renderScene1() {
