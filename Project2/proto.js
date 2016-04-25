@@ -108,7 +108,7 @@ function initGL() {
   createBuffers();
   initTextures();
 
-  renderScene1();
+  renderScene();
 }
 
 function setModelView() {
@@ -204,7 +204,14 @@ function createGeometry() {
   };
   box.verts = [box.front, box.right, box.back, box.left, box.top, box.bottom];
 
-  star = {}
+  star = {};
+  star.vertices = getStarVertices();
+  star.indexList = getStarIndexList();
+  star.normals = getNormals(star.vertices, star.indexList);
+  star.program = initShaders(gl, "star-vertex-shader", "star-fragment-shader");
+  star.vertDim = 3;
+  star.numElems = star.indexList.length;
+  star.theta = 0;
 }
 
 function createBuffers() {
@@ -312,9 +319,6 @@ function drawSphere() {
 
   gl.useProgram(sphere.program);
 
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
-
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphere.indexList), gl.STATIC_DRAW);
 
@@ -379,9 +383,6 @@ function drawStar() {
 
   gl.useProgram(star.program);
 
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
-
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(star.indexList), gl.STATIC_DRAW);
 
@@ -396,14 +397,6 @@ function drawStar() {
   var nvPosition = gl.getAttribLocation(star.program, "nv");
   gl.vertexAttribPointer(nvPosition, star.vertDim, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(nvPosition);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, starTexture);
-  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(star.texCoords), gl.STATIC_DRAW);
-  var texCoordLocation = gl.getAttribLocation(star.program, "texCoord");
-  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(texCoordLocation);
 
   // Insert your code here
   var MLoc = gl.getUniformLocation(star.program, "M");
@@ -567,35 +560,26 @@ function initTextures() {
     boxTextures.push(textureImage);
   }
 }
-function renderScene1() {
+function renderScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  drawBox();
-  drawEllipsoid();
+
   if (scene === "one") {
-    requestAnimFrame(renderScene1);
+    drawBox();
+    drawEllipsoid();
+  } else if (scene === "two") {
+    updateSceneThree();
+    drawSphere();
+    drawStar();
+  } else if (scene === "three") {
+    drawBox();
+    drawEllipsoid();
   }
+  requestAnimFrame(renderScene)
 }
 
-function renderScene2() {
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  updateSphere();
-  drawSphere();
-  if (scene === "two") {
-    requestAnimFrame(renderScene2);
-  }
-}
-
-function renderScene3() {
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  drawBox();
-  drawEllipsoid();
-  if (scene === "three") {
-    requestAnimFrame(renderScene3);
-  }
-}
-
-function updateSphere() {
+function updateSceneThree() {
   sphere.theta += 0.01;
+  star.theta += 0.02;
 }
 
 /* Sets the matrices used for transformations. */
@@ -698,81 +682,80 @@ function onMouseDrag(event) {
 
 function changeScene(event) {
   scene = "two";
-  renderScene2();
 }
 
 function getStarVertices() {
   var vertices = [
                   //front-left-top
-                  -0.75, 0.0, 0.75, 1.0,
-                  0.0, 0.0, 0.5, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  -0.75, 0.0, 0.75,
+                  0.0, 0.0, 0.5,
+                  0.0, 0.5, 0.0,
                   //front-right-top
-                  0.0, 0.0, 0.5, 1.0,
-                  0.75, 0.0, 0.75, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  0.0, 0.0, 0.5,
+                  0.75, 0.0, 0.75,
+                  0.0, 0.5, 0.0,
                   //right-left-top
-                  0.75, 0.0, 0.75, 1.0,
-                  0.5, 0.0, 0.0, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  0.75, 0.0, 0.75,
+                  0.5, 0.0, 0.0,
+                  0.0, 0.5, 0.0,
                   //right-right-top
-                  0.5, 0.0, 0.0, 1.0,
-                  0.75, 0.0, -0.75, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  0.5, 0.0, 0.0,
+                  0.75, 0.0, -0.75,
+                  0.0, 0.5, 0.0,
                   //back-left-top
-                  0.75, 0.0, -0.75, 1.0,
-                  0.0, 0.0, -0.5, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  0.75, 0.0, -0.75,
+                  0.0, 0.0, -0.5,
+                  0.0, 0.5, 0.0,
                   //back-right-top
-                  0.0, 0.0, -0.5, 1.0,
-                  -0.75, 0.0, -0.75, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  0.0, 0.0, -0.5,
+                  -0.75, 0.0, -0.75,
+                  0.0, 0.5, 0.0,
                   //left-left-top
-                  -0.75, 0.0, -0.75, 1.0,
-                  -0.5, 0.0, 0.0, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  -0.75, 0.0, -0.75,
+                  -0.5, 0.0, 0.0,
+                  0.0, 0.5, 0.0,
                   //left-right-top
-                  -0.5, 0.0, 0.0, 1.0,
-                  -0.75, 0.0, 0.75, 1.0,
-                  0.0, 0.5, 0.0, 1.0,
+                  -0.5, 0.0, 0.0,
+                  -0.75, 0.0, 0.75,
+                  0.0, 0.5, 0.0,
 
                   //front-left-bottom
-                  -0.75, 0.0, 0.75, 1.0,
-                  0.0, -0.5, 0.0, 1.0,
-                  0.0, 0.0, 0.5, 1.0,
+                  -0.75, 0.0, 0.75,
+                  0.0, -0.5, 0.0,
+                  0.0, 0.0, 0.5,
                   //front-right-bottom
-                  0.0, -0.5, 0.0, 1.0,
-                  0.75, 0.0, 0.75, 1.0,
-                  0.0, 0.0, 0.5, 1.0,
+                  0.0, -0.5, 0.0,
+                  0.75, 0.0, 0.75,
+                  0.0, 0.0, 0.5,
                   //right-left-bottom
-                  0.75, 0.0, 0.75, 1.0,
-                  0.0, -0.5, 0.0, 1.0,
-                  0.5, 0.0, 0.0, 1.0,
+                  0.75, 0.0, 0.75,
+                  0.0, -0.5, 0.0,
+                  0.5, 0.0, 0.0,
                   //right-right-bottom
-                  0.0, -0.5, 0.0, 1.0,
-                  0.75, 0.0, -0.75, 1.0,
-                  0.5, 0.0, 0.0, 1.0,
+                  0.0, -0.5, 0.0,
+                  0.75, 0.0, -0.75,
+                  0.5, 0.0, 0.0,
                   //back-left-bottom
-                  0.75, 0.0, -0.75, 1.0,
-                  0.0, -0.5, 0.0, 1.0,
-                  0.0, 0.0, -0.5, 1.0,
+                  0.75, 0.0, -0.75,
+                  0.0, -0.5, 0.0,
+                  0.0, 0.0, -0.5,
                   //back-right-bottom
-                  0.0, -0.5, 0.0, 1.0,
-                  -0.75, 0.0, -0.75, 1.0,
-                  0.0, 0.0, -0.5, 1.0,
+                  0.0, -0.5, 0.0,
+                  -0.75, 0.0, -0.75,
+                  0.0, 0.0, -0.5,
                   //left-left-bottom
-                  -0.75, 0.0, -0.75, 1.0,
-                  0.0, -0.5, 0.0, 1.0,
-                  -0.5, 0.0, 0.0, 1.0,
+                  -0.75, 0.0, -0.75,
+                  0.0, -0.5, 0.0,
+                  -0.5, 0.0, 0.0,
                   //left-right-bottom
-                  0.0, -0.5, 0.0, 1.0,
-                  -0.75, 0.0, 0.75, 1.0,
-                  -0.5, 0.0, 0.0, 1.0
+                  0.0, -0.5, 0.0,
+                  -0.75, 0.0, 0.75,
+                  -0.5, 0.0, 0.0
                 ];
   return vertices;
 }
 
-function getIndexList() {
+function getStarIndexList() {
   var indices = [0, 1, 2, //flt
                  3, 4, 5, //frt
                  6, 7, 8, //rlt
