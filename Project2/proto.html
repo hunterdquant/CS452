@@ -174,12 +174,9 @@
 
     varying vec3 directional1, directional2;
 
-    vec3 R;
     void main() {
 
-        R = clamp(directional1 + directional2, 0.0, 1.0);
-
-        gl_FragColor = vec4( R.r, R.g, R.b, 1.0 );
+        gl_FragColor = clamp(vec4( directional1 + directional2, 1.0 ), 0.0, 1.0);
     }
 
 </script>

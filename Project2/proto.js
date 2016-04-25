@@ -202,8 +202,9 @@ function createGeometry() {
     vertDim: 3,
     numElems: 6
   };
-
   box.verts = [box.front, box.right, box.back, box.left, box.top, box.bottom];
+
+  star = {}
 }
 
 function createBuffers() {
@@ -372,6 +373,73 @@ function drawSphere() {
   gl.uniform3f(directionColor2Loc, directionColor2[0], directionColor2[1], directionColor2[2])
 
   gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
+}
+
+function drawStar() {
+
+  gl.useProgram(star.program);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(star.indexList), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(star.vertices), gl.STATIC_DRAW);
+  var vertexPosition = gl.getAttribLocation(star.program, "vertexPosition");
+  gl.vertexAttribPointer(vertexPosition, star.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(star.normals)), gl.STATIC_DRAW);
+  var nvPosition = gl.getAttribLocation(star.program, "nv");
+  gl.vertexAttribPointer(nvPosition, star.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(nvPosition);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, starTexture);
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(star.texCoords), gl.STATIC_DRAW);
+  var texCoordLocation = gl.getAttribLocation(star.program, "texCoord");
+  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(texCoordLocation);
+
+  // Insert your code here
+  var MLoc = gl.getUniformLocation(star.program, "M");
+  gl.uniformMatrix4fv(MLoc, false, M);
+
+  var SRotLoc = gl.getUniformLocation(star.program, "SRot");
+  gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
+
+  var MinvTransLoc = gl.getUniformLocation(star.program, "MinvTrans");
+  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  var MinvLoc = gl.getUniformLocation(star.program, "Minv");
+  gl.uniformMatrix4fv(MinvLoc, false, Minv);
+
+  var SRotInvLoc = gl.getUniformLocation(star.program, "SRotInv");
+  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
+
+  var SRotInvTransLoc = gl.getUniformLocation(star.program, "SRotInvTrans");
+  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
+
+  var PLoc = gl.getUniformLocation(star.program, "P");
+  gl.uniformMatrix4fv(PLoc, false, P);
+
+  var thetaLoc = gl.getUniformLocation(star.program, "theta");
+  gl.uniform1f(thetaLoc, star.theta);
+
+  var lightDirection1Loc = gl.getUniformLocation(star.program, "lightDirection1");
+  gl.uniform3f(lightDirection1Loc, lightDirection1[0], lightDirection1[1], lightDirection1[2]);
+  var directionColor1Loc = gl.getUniformLocation(star.program, "directionColor1");
+  gl.uniform3f(directionColor1Loc, directionColor1[0], directionColor1[1], directionColor1[2]);
+  var lightDirection2Loc = gl.getUniformLocation(star.program, "lightDirection2");
+  gl.uniform3f(lightDirection2Loc, lightDirection2[0], lightDirection2[1], lightDirection2[2])
+  var directionColor2Loc = gl.getUniformLocation(star.program, "directionColor2");
+  gl.uniform3f(directionColor2Loc, directionColor2[0], directionColor2[1], directionColor2[2])
+
+  gl.drawElements(gl.TRIANGLES, star.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
 function getSphereData(isEllipse, sphere) {
@@ -631,4 +699,96 @@ function onMouseDrag(event) {
 function changeScene(event) {
   scene = "two";
   renderScene2();
+}
+
+function getStarVertices() {
+  var vertices = [
+                  //front-left-top
+                  -0.75, 0.0, 0.75, 1.0,
+                  0.0, 0.0, 0.5, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //front-right-top
+                  0.0, 0.0, 0.5, 1.0,
+                  0.75, 0.0, 0.75, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //right-left-top
+                  0.75, 0.0, 0.75, 1.0,
+                  0.5, 0.0, 0.0, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //right-right-top
+                  0.5, 0.0, 0.0, 1.0,
+                  0.75, 0.0, -0.75, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //back-left-top
+                  0.75, 0.0, -0.75, 1.0,
+                  0.0, 0.0, -0.5, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //back-right-top
+                  0.0, 0.0, -0.5, 1.0,
+                  -0.75, 0.0, -0.75, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //left-left-top
+                  -0.75, 0.0, -0.75, 1.0,
+                  -0.5, 0.0, 0.0, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+                  //left-right-top
+                  -0.5, 0.0, 0.0, 1.0,
+                  -0.75, 0.0, 0.75, 1.0,
+                  0.0, 0.5, 0.0, 1.0,
+
+                  //front-left-bottom
+                  -0.75, 0.0, 0.75, 1.0,
+                  0.0, -0.5, 0.0, 1.0,
+                  0.0, 0.0, 0.5, 1.0,
+                  //front-right-bottom
+                  0.0, -0.5, 0.0, 1.0,
+                  0.75, 0.0, 0.75, 1.0,
+                  0.0, 0.0, 0.5, 1.0,
+                  //right-left-bottom
+                  0.75, 0.0, 0.75, 1.0,
+                  0.0, -0.5, 0.0, 1.0,
+                  0.5, 0.0, 0.0, 1.0,
+                  //right-right-bottom
+                  0.0, -0.5, 0.0, 1.0,
+                  0.75, 0.0, -0.75, 1.0,
+                  0.5, 0.0, 0.0, 1.0,
+                  //back-left-bottom
+                  0.75, 0.0, -0.75, 1.0,
+                  0.0, -0.5, 0.0, 1.0,
+                  0.0, 0.0, -0.5, 1.0,
+                  //back-right-bottom
+                  0.0, -0.5, 0.0, 1.0,
+                  -0.75, 0.0, -0.75, 1.0,
+                  0.0, 0.0, -0.5, 1.0,
+                  //left-left-bottom
+                  -0.75, 0.0, -0.75, 1.0,
+                  0.0, -0.5, 0.0, 1.0,
+                  -0.5, 0.0, 0.0, 1.0,
+                  //left-right-bottom
+                  0.0, -0.5, 0.0, 1.0,
+                  -0.75, 0.0, 0.75, 1.0,
+                  -0.5, 0.0, 0.0, 1.0
+                ];
+  return vertices;
+}
+
+function getIndexList() {
+  var indices = [0, 1, 2, //flt
+                 3, 4, 5, //frt
+                 6, 7, 8, //rlt
+                 9, 10, 11, //rrt
+                 12, 13, 14, //blt
+                 15, 16, 17, //brt
+                 18, 19, 20, //llt
+                 21, 22, 23, //lrt
+                 24, 25, 26, //flb
+                 27, 28, 29, //frb
+                 30, 31, 32, //rlb
+                 33, 34, 35, //rrb
+                 36, 37, 38, //blb
+                 39, 40, 41, //brb
+                 42, 43, 44, //llb
+                 45, 46, 47 //lrb
+               ];
+  return indices;
 }
