@@ -175,7 +175,7 @@ function setUpLighting() {
 
 
 function createGeometry() {
-  var ellipsoidVerts = getSphereVertices(false);
+  var ellipsoidVerts = getSphereData(true);
   var sphereInds = getSphereIndices();
   ellipsoid = {
     vertices: ellipsoidVerts,
@@ -185,6 +185,15 @@ function createGeometry() {
     vertDim: 3,
     numElems: sphereInds.length
   };
+  sphere = {
+    vertices: ellipsoidVerts,
+    indexList: sphereInds,
+    normals: getNormals(ellipsoidVerts, sphereInds),
+    program: initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader"),
+    vertDim: 3,
+    numElems: sphereInds.length
+  };
+
   //box bound
   var bb = 32.0;
   box = {
@@ -320,9 +329,6 @@ function drawEllipsoid() {
 
   PLoc = gl.getUniformLocation(ellipsoid.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
-  getNeededLocations();
-  enablePointLight();
-  enableDirectionalLight();
 
   alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
   gl.uniform1f(alphaLoc, alpha);
@@ -333,7 +339,60 @@ function drawEllipsoid() {
   gl.drawElements(gl.TRIANGLES, ellipsoid.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
-function getSphereVertices(isEllipse) {
+function drawsphere() {
+
+  gl.useProgram(sphere.program);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(sphere.indexList), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphere.vertices), gl.STATIC_DRAW);
+  var vertexPosition = gl.getAttribLocation(sphere.program, "vertexPosition");
+  gl.vertexAttribPointer(vertexPosition, sphere.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(sphere.normals)), gl.STATIC_DRAW);
+  var nvPosition = gl.getAttribLocation(sphere.program, "nv");
+  gl.vertexAttribPointer(nvPosition, sphere.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(nvPosition);
+
+  // Insert your code here
+  var MLoc = gl.getUniformLocation(sphere.program, "M");
+  gl.uniformMatrix4fv(MLoc, false, M);
+
+  var SRotLoc = gl.getUniformLocation(sphere.program, "SRot");
+  gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
+
+  var MinvTransLoc = gl.getUniformLocation(sphere.program, "MinvTrans");
+  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  var MinvLoc = gl.getUniformLocation(sphere.program, "Minv");
+  gl.uniformMatrix4fv(MinvLoc, false, Minv);
+
+  var SRotInvLoc = gl.getUniformLocation(sphere.program, "SRotInv");
+  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
+
+  var SRotInvTransLoc = gl.getUniformLocation(sphere.program, "SRotInvTrans");
+  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
+
+  PLoc = gl.getUniformLocation(sphere.program, "P");
+  gl.uniformMatrix4fv(PLoc, false, P);
+
+  alphaLoc = gl.getUniformLocation(sphere.program, "alpha");
+  gl.uniform1f(alphaLoc, alpha);
+
+  cubeTexMapLoc = gl.getUniformLocation(sphere.program, "cubeTexMap");
+  gl.uniform1i(cubeTexMapLoc, 0);
+
+  gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
+}
+
+function getSphereData(isEllipse) {
 
   var vertPositions = [];
   var texCoords = [];
@@ -460,7 +519,6 @@ function renderScene1() {
 
 function renderScene2() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  drawBox();
   drawEllipsoid();
   if (scene === "two") {
     requestAnimFrame(renderScene2);
@@ -520,49 +578,6 @@ function getPerspective() {
     0, 0, -(far + near) / (far - near), -1,
     0, 0, -(2 * far * near) / (far - near), 0
   ];
-}
-
-/* Retrieves uniform locations */
-function getNeededLocations() {
-  p0Loc = gl.getUniformLocation(ellipsoid.program, "p0");
-  IaLoc = gl.getUniformLocation(ellipsoid.program, "Ia");
-  IdLoc = gl.getUniformLocation(ellipsoid.program, "Id");
-  IsLoc = gl.getUniformLocation(ellipsoid.program, "Is");
-  kaLoc = gl.getUniformLocation(ellipsoid.program, "ka");
-  kdLoc = gl.getUniformLocation(ellipsoid.program, "kd");
-  ksLoc = gl.getUniformLocation(ellipsoid.program, "ks");
-}
-
-/* Enables the point light */
-function enablePointLight() {
-  gl.uniform3f(p0Loc, p0[0], p0[1], p0[2]);
-  gl.uniform3f(IaLoc, Ia[0], Ia[1], Ia[2]);
-  gl.uniform3f(IdLoc, Id[0], Id[1], Id[2]);
-  gl.uniform3f(IsLoc, Is[0], Is[1], Is[2]);
-  gl.uniform3f(kaLoc, ka[0], ka[1], ka[2]);
-  gl.uniform3f(kdLoc, kd[0], kd[1], kd[2]);
-  gl.uniform3f(ksLoc, ks[0], ks[1], ks[2]);
-}
-
-/* Disables the point light */
-function disablePointLight() {
-  gl.uniform3f(kaLoc, 0.0, 0.0, 0.0);
-  gl.uniform3f(kdLoc, 0.0, 0.0, 0.0);
-  gl.uniform3f(ksLoc, 0.0, 0.0, 0.0);
-}
-
-/* Enables directional light */
-function enableDirectionalLight() {
-  lightDirectionLoc = gl.getUniformLocation(ellipsoid.program, "lightDirection");
-  gl.uniform3f(lightDirectionLoc, lightDirection[0], lightDirection[1], lightDirection[2]);
-
-  directionColorLoc = gl.getUniformLocation(ellipsoid.program, "directionColor");
-  gl.uniform3f(directionColorLoc, directionColor[0], directionColor[1], directionColor[2]);
-}
-
-/* Disables directional light */
-function disableDirectionalLight() {
-  gl.uniform3f(directionColorLoc, 0.0, 0.0, 0.0);
 }
 
 function onMouseDown(event) {

@@ -167,7 +167,7 @@
         vec3 r = normalize(2.0*costheta*n_n - i_n);
         float cosphi = dot(r, v_n);
         float shiny = pow(max(cosphi, 0.0), alpha);
-        float costhetag0 = floor(0.5*(sign(costheta)+1.0));
+        float costhetag0 = floor(0.5*(sign(costheta)+1.0));1
         Rs.r = ks.r*Is_pp0.r*shiny*costhetag0;
         Rs.g = ks.g*Is_pp0.g*shiny*costhetag0;
         Rs.b = ks.b*Is_pp0.b*shiny*costhetag0;
