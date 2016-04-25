@@ -177,6 +177,7 @@ function createGeometry() {
   sphere.program = initShaders(gl, "sphere-vertex-shader", "sphere-fragment-shader");
   sphere.vertDim = 3;
   sphere.numElems = sphereInds.length;
+  sphere.theta = 0;
 
   //box bound
   var bb = 32.0;
@@ -372,8 +373,11 @@ function drawSphere() {
   var SRotInvTransLoc = gl.getUniformLocation(sphere.program, "SRotInvTrans");
   gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
 
-  PLoc = gl.getUniformLocation(sphere.program, "P");
+  var PLoc = gl.getUniformLocation(sphere.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
+
+  var thetaLoc = gl.getUniformLocation(sphere.program, "theta");
+  gl.uniform1f(thetaLoc, sphere.theta);
 
   gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
 }
@@ -514,6 +518,7 @@ function renderScene1() {
 
 function renderScene2() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  updateSphere();
   drawSphere();
   if (scene === "two") {
     requestAnimFrame(renderScene2);
@@ -527,6 +532,10 @@ function renderScene3() {
   if (scene === "three") {
     requestAnimFrame(renderScene3);
   }
+}
+
+function updateSphere() {
+  sphere.theta += 0.01;
 }
 
 /* Sets the matrices used for transformations. */

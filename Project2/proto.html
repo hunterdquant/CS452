@@ -91,6 +91,7 @@
   uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
+  uniform float theta;
 
   varying highp vec2 fTexCoord;
   mat4 proj = mat4(
@@ -101,8 +102,16 @@
   );
 
   void main() {
+    float c = cos(theta);
+    float s = sin(theta);
+    mat4 sphereRot = mat4(
+      c, 0.0, s, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      -s, 0.0, c, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    );
     fTexCoord = texCoord;
-    vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
+    vec4 transformedVertPos = M * SRot * sphereRot * vec4(vertexPosition, 1.0);
     gl_Position = proj * P * transformedVertPos;
   }
 </script>
