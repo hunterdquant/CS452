@@ -22,10 +22,8 @@ var a;
 // Up direction.
 var vup;
 
-var perLeft, perRight, perTop, perBottom;
-
-// Distance bounds
-var near, far;
+// Projection bounds
+var pl, pr, pt, pb, pn, pf;
 
 var indexBuffer;
 var verticesBuffer;
@@ -36,14 +34,6 @@ var cubeMap;
 var boxTextures;
 var images;
 var sphereTexture;
-
-// Point light along with its intensity, reflectance coefficients, and on state.
-var p0;
-var Ia, Id, Is;
-var ka, kd, ks;
-
-// Shiny factor.
-var alpha;
 
 // Directional light with its direction, color, and on state.
 // diffuse only.
