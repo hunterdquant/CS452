@@ -59,6 +59,10 @@ var sceneAlpha;
 var sceneBeta;
 var scene;
 
+var scale;
+var scaleDown;
+var scaleUp;
+
 function initGL() {
   canvas = document.getElementById("gl-canvas");
   canvas.width = window.innerHeight;
@@ -98,7 +102,7 @@ function initGL() {
 
   sceneAlpha = 0.0;
   sceneBeta = 0.0;
-
+  scale = 1.0;
   scene = "one";
 
   setModelView();
@@ -306,10 +310,13 @@ function drawEllipsoid() {
   var SRotInvTransLoc = gl.getUniformLocation(ellipsoid.program, "SRotInvTrans");
   gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
 
-  PLoc = gl.getUniformLocation(ellipsoid.program, "P");
+  var scaleLoc = gl.getUniformLocation(ellipsoid.program, "s");
+  gl.uniform1f(scaleLoc, scale);
+
+  var PLoc = gl.getUniformLocation(ellipsoid.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
-  cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
+  var cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
   gl.uniform1i(cubeTexMapLoc, 0);
 
   gl.drawElements(gl.TRIANGLES, ellipsoid.numElems, gl.UNSIGNED_SHORT, 0);
@@ -367,6 +374,9 @@ function drawSphere() {
   var thetaLoc = gl.getUniformLocation(sphere.program, "theta");
   gl.uniform1f(thetaLoc, sphere.theta);
 
+  var scaleLoc = gl.getUniformLocation(sphere.program, "s");
+  gl.uniform1f(scaleLoc, scale);
+
   var lightDirection1Loc = gl.getUniformLocation(sphere.program, "lightDirection1");
   gl.uniform3f(lightDirection1Loc, lightDirection1[0], lightDirection1[1], lightDirection1[2]);
   var directionColor1Loc = gl.getUniformLocation(sphere.program, "directionColor1");
@@ -422,6 +432,9 @@ function drawStar() {
 
   var thetaLoc = gl.getUniformLocation(star.program, "theta");
   gl.uniform1f(thetaLoc, star.theta);
+
+  var scaleLoc = gl.getUniformLocation(star.program, "s");
+  gl.uniform1f(scaleLoc, scale);
 
   var lightDirection1Loc = gl.getUniformLocation(star.program, "lightDirection1");
   gl.uniform3f(lightDirection1Loc, lightDirection1[0], lightDirection1[1], lightDirection1[2]);
@@ -562,11 +575,26 @@ function initTextures() {
 }
 function renderScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
+  console.log(scale);
   if (scene === "one") {
+    if (scaleDown) {
+      scale -= 0.005;
+      if (scale <= 0) {
+        scene = "two";
+        scaleDown = false;
+        scaleUp = true;
+      }
+    }
     drawBox();
     drawEllipsoid();
   } else if (scene === "two") {
+    if (scaleUp) {
+      scale += 0.005;
+      if (scale >= 1) {
+        scaleDown = false;
+        scaleUp = false;
+      }
+    }
     updateSceneThree();
     drawSphere();
     drawStar();
@@ -681,7 +709,7 @@ function onMouseDrag(event) {
 }
 
 function changeScene(event) {
-  scene = "two";
+  scaleDown = true;
 }
 
 function getStarVertices() {

@@ -44,7 +44,7 @@
   uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
-
+  uniform float s;
   varying vec3 n, v;
   mat4 proj = mat4(
     1.0, 0.0, 0.0, 0.0,
@@ -55,7 +55,12 @@
 
   void main() {
 
-    vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
+    mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                      0.0, s, 0.0, 0.0,
+                      0.0, 0.0, s, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+
+    vec4 transformedVertPos = M * SRot * scaleM * vec4(vertexPosition, 1.0);
     v = normalize(SRotInv * Minv * vec4(0.0, 0.0, 0.0, 1.0) - vec4(vertexPosition, 1.0)).xyz;
     n = normalize(vec4(nv.x, nv.y, nv.z, 1.0)).xyz;
     gl_Position = proj * P * transformedVertPos;
@@ -91,7 +96,7 @@
   uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
-  uniform float theta;
+  uniform float theta, s;
   uniform vec3 lightDirection1, directionColor1, lightDirection2, directionColor2;
   varying vec3 directional1, directional2;
   varying highp vec2 fTexCoord;
@@ -103,6 +108,13 @@
   );
 
   void main() {
+
+
+    mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                      0.0, s, 0.0, 0.0,
+                      0.0, 0.0, s, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+
     float c = cos(theta);
     float s = sin(theta);
     mat4 sphereRot = mat4(
@@ -112,7 +124,7 @@
       0.0, 0.0, 0.0, 1.0
     );
     fTexCoord = texCoord;
-    vec4 transformedVertPos = M * SRot * sphereRot * vec4(vertexPosition, 1.0);
+    vec4 transformedVertPos = M * SRot * sphereRot * scaleM * vec4(vertexPosition, 1.0);
 
     vec4 n = MinvTrans * sphereRot * vec4(nv, 1.0);
 
@@ -144,7 +156,7 @@
     attribute vec3 nv;
 
     uniform mat4 M, MinvTrans, SRot, P;
-    uniform float theta;
+    uniform float theta, s;
 
     uniform vec3 lightDirection1, directionColor1, lightDirection2, directionColor2;
     varying vec3 directional1, directional2;
@@ -153,6 +165,11 @@
                      0.0, 0.0, 1.0, 0.0,
                      0.0, 0.0, 0.0, 1.0);
     void main() {
+
+        mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                          0.0, s, 0.0, 0.0,
+                          0.0, 0.0, s, 0.0,
+                          0.0, 0.0, 0.0, 1.0);
 
         gl_PointSize = 1.0;
 
@@ -184,7 +201,7 @@
         );
 
 
-        vec4 transformedVertPos = M * SRot * starOrbit * starTrans * starRot * vec4(vertexPosition, 1.0);
+        vec4 transformedVertPos = M * SRot * starOrbit * starTrans * starRot * scaleM * vec4(vertexPosition, 1.0);
 
         vec4 n =  flipX * MinvTrans * starOrbit * starTransInv * starRot * vec4(nv, 1.0);
 
