@@ -36,9 +36,7 @@ var sphereTexture;
 
 // Directional light with its direction, color, and on state.
 // diffuse only.
-var lightDirection;
-var directionColor;
-var directionOn;
+var lightDirection1, directionColor1, lightDirection2, directionColor2;
 
 var radius = 2;
 var latBands = 64;
@@ -139,25 +137,13 @@ function setProjection() {
 }
 
 function setUpLighting() {
-  // Point light source position.
-  p0 = vec3(1.0, 1.0, 1.0);
-  // Point light source intensity.
-  Ia = vec3(0.5, 0.8, 0.5);
-  Id = vec3(0.4, 0.8, 0.3);
-  Is = vec3(1.0, 1.0, 1.0);
-
-  // Point light source reflectance coefficients.
-  ka = vec3(0.5, 0.5, 0.6);
-  kd = vec3(0.8, 0.6, 0.6);
-  ks = vec3(1.0, 1.0, 1.0);
-
-  // Shine value and specular state.
-  alpha = 8.0;
 
   // Direction and color value for the diffuse directional light.
-  lightDirection = vec3(0.0, 0.0, 1.0);
-  directionColor = vec3(0.5, 0.7, 0.7);
-  directionOn = true;
+  lightDirection1 = vec3(-1.0, 0.0, 0.0);
+  directionColor1 = vec3(0.149, 0.545, 0.824);
+
+  lightDirection2 = vec3(1.0, 0.0, 0.0);
+  directionColor2 = vec3(0.863, 0.196, 0.184);
 }
 
 
@@ -315,9 +301,6 @@ function drawEllipsoid() {
   PLoc = gl.getUniformLocation(ellipsoid.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
-  alphaLoc = gl.getUniformLocation(ellipsoid.program, "alpha");
-  gl.uniform1f(alphaLoc, alpha);
-
   cubeTexMapLoc = gl.getUniformLocation(ellipsoid.program, "cubeTexMap");
   gl.uniform1i(cubeTexMapLoc, 0);
 
@@ -378,6 +361,15 @@ function drawSphere() {
 
   var thetaLoc = gl.getUniformLocation(sphere.program, "theta");
   gl.uniform1f(thetaLoc, sphere.theta);
+
+  var lightDirection1Loc = gl.getUniformLocation(sphere.program, "lightDirection1");
+  gl.uniform3f(lightDirection1Loc, lightDirection1[0], lightDirection1[1], lightDirection1[2]);
+  var directionColor1Loc = gl.getUniformLocation(sphere.program, "directionColor1");
+  gl.uniform3f(directionColor1Loc, directionColor1[0], directionColor1[1], directionColor1[2]);
+  var lightDirection2Loc = gl.getUniformLocation(sphere.program, "lightDirection2");
+  gl.uniform3f(lightDirection2Loc, lightDirection2[0], lightDirection2[1], lightDirection2[2])
+  var directionColor2Loc = gl.getUniformLocation(sphere.program, "directionColor2");
+  gl.uniform3f(directionColor2Loc, directionColor2[0], directionColor2[1], directionColor2[2])
 
   gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
 }
