@@ -79,7 +79,42 @@
     gl_FragColor = texColor;
   }
 </script>
+<script id="sphere-vertex-shader" type="x-shader/x-vertex">
+  precision mediump float;
+  attribute vec3 vertexPosition;
+  attribute vec3 nv;
+  attribute vec2 texCoord;
+  uniform mat4 M;
+  uniform mat4 Minv;
+  uniform mat4 SRot;
+  uniform mat4 SRotInv;
+  uniform mat4 SRotInvTrans;
+  uniform mat4 MinvTrans;
+  uniform mat4 P;
 
+  varying highp vec2 fTexCoord;
+  mat4 proj = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, -1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+
+  void main() {
+    fTexCoord = texCoord;
+    vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
+    gl_Position = proj * P * transformedVertPos;
+  }
+</script>
+<script id="sphere-fragment-shader" type="x-shader/x-fragment">
+  precision mediump float;
+  uniform sampler2D texMap;
+  varying highp vec2 fTexCoord;
+  void main() {
+    vec4 color = texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
+    gl_FragColor = color;
+  }
+</script>
 
 <script id="star-vertex-shader" type="x-shader/x-vertex">
 
@@ -143,6 +178,7 @@
     <img src="images/left.jpg" id="left" hidden />
     <img src="images/top.jpg" id="top" hidden />
     <img src="images/bottom.jpg" id="bottom" hidden />
+    <img src="images/sun.jpg" id="sun" hidden />
 
     <canvas id="gl-canvas" style="display:block" onmousedown="onMouseDown(event)" onmouseup="onMouseUp(event)" onmousemove="onMouseDrag(event)">
     </canvas>

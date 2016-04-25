@@ -12,7 +12,6 @@ var M;
 var Minv;
 
 // Matrices representing a orthogonal and perspective projection.
-var Porth;
 var P;
 
 // Viewer location.
@@ -22,7 +21,7 @@ var a;
 // Up direction.
 var vup;
 
-// Projection bounds
+// Projection bounds.
 var pl, pr, pt, pb, pn, pf;
 
 var indexBuffer;
@@ -127,14 +126,14 @@ function setProjection() {
 
   // Set bounds for projection.
   viewerDist = length(subtract(e, a));
-  near = viewerDist - 6;
-  far = viewerDist + 64;
+  pn = viewerDist - 6;
+  pf = viewerDist + 64;
 
   // Perspecive projection bounds.
-  perTop = near * Math.tan(Math.PI / 4);
-  perBottom = -perTop;
-  perRight = perTop;
-  perLeft = -perRight;
+  pt = pn * Math.tan(Math.PI / 4);
+  pb = -pt;
+  pr = pt;
+  pl = -pr;
 
   getPerspective();
 }
@@ -175,7 +174,7 @@ function createGeometry() {
   getSphereData(false, sphere);
   sphere.indexList = sphereInds;
   sphere.normals = getNormals(sphere.vertices, sphereInds);
-  sphere.program = initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader");
+  sphere.program = initShaders(gl, "sphere-vertex-shader", "sphere-fragment-shader");
   sphere.vertDim = 3;
   sphere.numElems = sphereInds.length;
 
@@ -324,7 +323,7 @@ function drawEllipsoid() {
   gl.drawElements(gl.TRIANGLES, ellipsoid.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
-function drawsphere() {
+function drawSphere() {
 
   gl.useProgram(sphere.program);
 
@@ -345,6 +344,14 @@ function drawsphere() {
   var nvPosition = gl.getAttribLocation(sphere.program, "nv");
   gl.vertexAttribPointer(nvPosition, sphere.vertDim, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(nvPosition);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+  gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(sphere.texCoords), gl.STATIC_DRAW);
+  var texCoordLocation = gl.getAttribLocation(sphere.program, "texCoord");
+  gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(texCoordLocation);
 
   // Insert your code here
   var MLoc = gl.getUniformLocation(sphere.program, "M");
@@ -477,6 +484,15 @@ function initTextures() {
   gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[4]);
   gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, images[5]);
 
+
+  sphereTexture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, sphereTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, document.getElementById("sun"));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
   for (var i = 0; i < 6; i++) {
     textureImage = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, textureImage);
@@ -486,10 +502,7 @@ function initTextures() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     boxTextures.push(textureImage);
   }
-
-  sphereTexture = gl.createTexture();
 }
-
 function renderScene1() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   drawBox();
@@ -501,7 +514,7 @@ function renderScene1() {
 
 function renderScene2() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  drawEllipsoid();
+  drawSphere();
   if (scene === "two") {
     requestAnimFrame(renderScene2);
   }
@@ -555,10 +568,10 @@ function calcMAndMinv() {
 /* Sets the projection matrices. */
 function getPerspective() {
   P = [
-    near / perRight, 0, 0, 0,
-    0, near / perTop, 0, 0,
-    0, 0, -(far + near) / (far - near), -1,
-    0, 0, -(2 * far * near) / (far - near), 0
+    pn / pr, 0, 0, 0,
+    0, pn / pt, 0, 0,
+    0, 0, -(pf + pn) / (pf - pn), -1,
+    0, 0, -(2 * pf * pn) / (pf - pn), 0
   ];
 }
 
