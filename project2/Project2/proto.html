@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script id="box-vertex-shader" type="x-shader/x-vertex">
+    precision mediump float;
+    attribute vec3 vertexPosition;
+    attribute vec2 texCoord;
+    uniform mat4 M;
+    uniform mat4 SRot;
+    uniform mat4 P;
+    varying highp vec2 fTexCoord;
+    mat4 proj = mat4(
+      1.0, 0.0, 0.0, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      0.0, 0.0, -1.0, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    );
+    void main() {
+      fTexCoord = texCoord;
+      vec4 transformedVertPos = M * SRot * vec4(vertexPosition, 1.0);
+      gl_Position = P * transformedVertPos;
+    }
+  </script>
+  <script id="box-fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform sampler2D texMap;
+    varying highp vec2 fTexCoord;
+    void main() {
+      vec4 color = texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
+      gl_FragColor = color;
+    }
+  </script>
+<script id="ellipsoid-vertex-shader" type="x-shader/x-vertex">
+  precision mediump float;
+  attribute vec3 vertexPosition;
+  attribute vec3 nv;
+
+  uniform mat4 M;
+  uniform mat4 Minv;
+  uniform mat4 SRot;
+  uniform mat4 SRotInv;
+  uniform mat4 MinvTrans;
+  uniform mat4 P;
+  uniform float s;
+  varying vec3 n, v;
+  mat4 proj = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, -1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+
+  void main() {
+
+    mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                      0.0, s, 0.0, 0.0,
+                      0.0, 0.0, s, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+
+    vec4 transformedVertPos = M * SRot * scaleM * vec4(vertexPosition, 1.0);
+    v = normalize(SRotInv * Minv * vec4(0.0, 0.0, 0.0, 1.0) - vec4(vertexPosition, 1.0)).xyz;
+    n = normalize(vec4(nv.x, nv.y, nv.z, 1.0)).xyz;
+    gl_Position = proj * P * transformedVertPos;
+  }
+</script>
+<script id="ellipsoid-fragment-shader" type="x-shader/x-fragment">
+  precision mediump float;
+  varying vec3 n, v;
+  uniform samplerCube cubeTexMap;
+  mat4 proj = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, -1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+  void main() {
+    vec4 n_n = vec4(normalize(n), 1.0);
+    vec4 v_n = vec4(normalize(v), 1.0);
+    vec4 i = 2.0 * dot(n_n, v_n) * n_n - v_n;
+    vec4 texColor = textureCube(cubeTexMap, (proj * i).xyz);
+    gl_FragColor = texColor;
+  }
+</script>
+<script id="sphere-vertex-shader" type="x-shader/x-vertex">
+  precision mediump float;
+  attribute vec3 vertexPosition;
+  attribute vec3 nv;
+  attribute vec2 texCoord;
+  uniform mat4 M;
+  uniform mat4 SRot;
+  uniform mat4 MinvTrans;
+  uniform mat4 P;
+  uniform float theta, s;
+  uniform vec3 lightDirection1, directionColor1, lightDirection2, directionColor2;
+  varying vec3 directional1, directional2;
+  varying highp vec2 fTexCoord;
+  mat4 proj = mat4(
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, -1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+
+  void main() {
+
+
+    mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                      0.0, s, 0.0, 0.0,
+                      0.0, 0.0, s, 0.0,
+                      0.0, 0.0, 0.0, 1.0);
+
+    float c = cos(theta);
+    float s = sin(theta);
+    mat4 sphereRot = mat4(
+      c, 0.0, s, 0.0,
+      0.0, 1.0, 0.0, 0.0,
+      -s, 0.0, c, 0.0,
+      0.0, 0.0, 0.0, 1.0
+    );
+    fTexCoord = texCoord;
+    vec4 transformedVertPos = M * SRot * sphereRot * scaleM * vec4(vertexPosition, 1.0);
+
+    vec4 n = MinvTrans * sphereRot * vec4(nv, 1.0);
+
+    float directionalWeight = max(dot(n.xyz, lightDirection1), 0.0);
+    directional1 = directionalWeight*directionColor1;
+    directionalWeight = max(dot(n.xyz, lightDirection2), 0.0);
+    directional2 = directionalWeight*directionColor2;
+
+    gl_Position = P * transformedVertPos;
+  }
+</script>
+<script id="sphere-fragment-shader" type="x-shader/x-fragment">
+  precision mediump float;
+  uniform sampler2D texMap;
+  varying vec3 directional1, directional2;
+  varying highp vec2 fTexCoord;
+  void main() {
+    vec4 totalDir = vec4(directional1 + directional2, 1.0);
+    vec4 texColor = 0.4 * texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
+    gl_FragColor = clamp(totalDir + texColor, 0.0, 1.0);
+  }
+</script>
+
+<script id="star-vertex-shader" type="x-shader/x-vertex">
+
+    precision mediump float;
+
+    attribute vec3 vertexPosition;
+    attribute vec3 nv;
+
+    uniform mat4 M, MinvTrans, SRot, P;
+    uniform float theta, s;
+
+    uniform vec3 lightDirection1, directionColor1, lightDirection2, directionColor2;
+    varying vec3 directional1, directional2;
+    mat4 flipX = mat4(-1.0, 0.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
+    void main() {
+
+        mat4 scaleM = mat4(s, 0.0, 0.0, 0.0,
+                          0.0, s, 0.0, 0.0,
+                          0.0, 0.0, s, 0.0,
+                          0.0, 0.0, 0.0, 1.0);
+
+        gl_PointSize = 1.0;
+
+        float c = cos(theta);
+        float s = sin(theta);
+        mat4 starRot = mat4(
+          c, 0.0, s, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          -s, 0.0, c, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+        mat4 starOrbit = mat4(
+          c, 0.0, s, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          -s, 0.0, c, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+        mat4 starTrans = mat4(
+          1.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          4.0, 0.0, 0.0, 1.0
+        );
+        mat4 starTransInvT = mat4(
+          1.0, 0.0, 0.0, -4.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+
+
+        vec4 transformedVertPos = M * SRot * starOrbit * starTrans * starRot * scaleM * vec4(vertexPosition, 1.0);
+
+        vec4 n =  flipX * MinvTrans * starOrbit * starTransInvT * starRot * vec4(nv, 1.0);
+
+
+        float directionalWeight = max(dot(n.xyz, lightDirection1), 0.0);
+        directional1 = directionalWeight*directionColor1;
+        directionalWeight = max(dot(n.xyz, lightDirection2), 0.0);
+        directional2 = directionalWeight*directionColor2;
+
+        gl_Position = P * transformedVertPos;
+    }
+
+</script>
+
+<script id="star-fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying vec3 directional1, directional2;
+    void main() {
+
+        gl_FragColor = clamp(vec4( directional1 + directional2, 1.0 ), 0.0, 1.0);
+    }
+
+</script>
+<script id="shard-vertex-shader" type="x-shader/x-vertex">
+
+    precision mediump float;
+
+    attribute vec3 vertexPosition;
+    attribute vec3 nv;
+
+    uniform mat4 M, MinvTrans, SRot, P;
+    uniform float theta;
+    uniform vec3 pos;
+
+    uniform vec3 lightDirection1, directionColor1, lightDirection2, directionColor2;
+    varying vec3 directional1, directional2;
+    mat4 flipX = mat4(-1.0, 0.0, 0.0, 0.0,
+                     0.0, 1.0, 0.0, 0.0,
+                     0.0, 0.0, 1.0, 0.0,
+                     0.0, 0.0, 0.0, 1.0);
+    void main() {
+
+        gl_PointSize = 1.0;
+
+        float c = cos(theta);
+        float s = sin(theta);
+        mat4 shardRotY = mat4(
+          c, 0.0, s, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          -s, 0.0, c, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+        mat4 shardRotX = mat4(
+          1.0, 0.0, 0.0, 0.0,
+          0.0, c, -s, 0.0,
+          0.0, s, c, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+        mat4 shardRotZ = mat4(
+          c, -s, 0.0, 0.0,
+          s, c, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+        mat4 shardTrans = mat4(
+          1.0, 0.0, 0.0, 0.0,
+          0.0, 1.0, 0.0, 0.0,
+          0.0, 0.0, 1.0, 0.0,
+          pos.x, pos.y, pos.z, 1.0
+        );
+        mat4 shardTransInvT = mat4(
+          1.0, 0.0, 0.0, -pos.x,
+          0.0, 1.0, 0.0, -pos.y,
+          0.0, 0.0, 1.0, -pos.z,
+          0.0, 0.0, 0.0, 1.0
+        );
+
+
+        vec4 transformedVertPos = M * SRot * shardTrans * shardRotZ * shardRotY * shardRotX * vec4(vertexPosition, 1.0);
+
+        vec4 n =  flipX * MinvTrans * shardTrans * shardRotZ * shardRotY * shardRotX * vec4(nv, 1.0);
+
+
+        float directionalWeight = max(dot(n.xyz, lightDirection1), 0.0);
+        directional1 = directionalWeight*directionColor1;
+        directionalWeight = max(dot(n.xyz, lightDirection2), 0.0);
+        directional2 = directionalWeight*directionColor2;
+
+        gl_Position = P * transformedVertPos;
+    }
+
+</script>
+
+<script id="shard-fragment-shader" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+    varying vec3 directional1, directional2;
+    vec3 baseColor = vec3(0.15, 0.15, 0.15);
+    void main() {
+
+        gl_FragColor = clamp(vec4( directional1 + directional2 + baseColor, 1.0 ), 0.0, 1.0);
+    }
+
+</script>
+
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="proto.js"></script>
+
+</head>
+
+<body onload = "initGL()" onkeydown="changeScene(event)">
+    <img src="images/front.jpg" id="front" hidden />
+    <img src="images/right.jpg" id="right" hidden />
+    <img src="images/back.jpg" id="back" hidden />
+    <img src="images/left.jpg" id="left" hidden />
+    <img src="images/top.jpg" id="top" hidden />
+    <img src="images/bottom.jpg" id="bottom" hidden />
+    <img src="images/sun.jpg" id="sun" hidden />
+
+    <canvas id="gl-canvas" style="display:block" onmousedown="onMouseDown(event)" onmouseup="onMouseUp(event)" onmousemove="onMouseDrag(event)">
+    </canvas>
+</body>
+</html>
