@@ -575,7 +575,6 @@ function initTextures() {
 }
 function renderScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  console.log(scale);
   if (scene === "one") {
     if (scaleDown) {
       scale -= 0.005;
@@ -588,6 +587,8 @@ function renderScene() {
     drawBox();
     drawEllipsoid();
   } else if (scene === "two") {
+
+  } else if (scene === "three") {
     if (scaleUp) {
       scale += 0.005;
       if (scale >= 1) {
@@ -598,9 +599,6 @@ function renderScene() {
     updateSceneThree();
     drawSphere();
     drawStar();
-  } else if (scene === "three") {
-    drawBox();
-    drawEllipsoid();
   }
   requestAnimFrame(renderScene)
 }
