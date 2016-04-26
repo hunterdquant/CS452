@@ -164,6 +164,7 @@ function createGeometry() {
   ellipsoid.program = initShaders(gl, "ellipsoid-vertex-shader", "ellipsoid-fragment-shader");
   ellipsoid.vertDim = 3;
   ellipsoid.numElems = sphereInds.length;
+
   sphere = {};
   getSphereData(false, sphere);
   sphere.indexList = sphereInds;
@@ -252,11 +253,9 @@ function createGeometry() {
                     0.0, 0.0, -0.1,
                     0.0, -0.1, 0.0,
                     0.1, 0.0, 0.0];
-
   var shardInds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
   var shardNorms = getNormals(shardVerts, shardInds);
   var shardProg = initShaders(gl, "shard-vertex-shader", "shard-fragment-shader");
-
   for (var i = 0; i < 256; i++) {
     var shard = {};
     shard.vertices = shardVerts;
@@ -287,7 +286,6 @@ function drawBox() {
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(box.indexList), gl.STATIC_DRAW);
 
-  // Insert your code here
   var MLoc = gl.getUniformLocation(box.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
@@ -339,7 +337,6 @@ function drawEllipsoid() {
   gl.vertexAttribPointer(nvPosition, ellipsoid.vertDim, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(nvPosition);
 
-  // Insert your code here
   var MLoc = gl.getUniformLocation(ellipsoid.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
@@ -394,7 +391,6 @@ function drawSphere() {
   gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(texCoordLocation);
 
-  // Insert your code here
   var MLoc = gl.getUniformLocation(sphere.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
@@ -585,14 +581,14 @@ function getNormals(vertices, indexList) {
     var faceNormals = [];
     for (var j = 0; j < indexList.length; j += 3) {
       if (indexList[j] === i || indexList[j + 1] === i || indexList[j + 2] === i) {
-        let threeTimesInd = 3 * indexList[j];
-        let p0 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        var threeTimesInd = 3 * indexList[j];
+        var p0 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
         threeTimesInd = 3 * indexList[j + 1];
-        let p1 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        var p1 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
         threeTimesInd = 3 * indexList[j + 2];
-        let p2 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
-        let v1 = subtract(p1, p0);
-        let v2 = subtract(p2, p0);
+        var p2 = vec3(vertices[threeTimesInd], vertices[threeTimesInd + 1], vertices[threeTimesInd + 2]);
+        var v1 = subtract(p1, p0);
+        var v2 = subtract(p2, p0);
         faceNormals.push(cross(v1, v2));
       }
     }
@@ -715,7 +711,6 @@ function updateSceneThree() {
   star.theta += 0.02;
 }
 
-/* Sets the matrices used for transformations. */
 function calcMAndMinv() {
 
   // Unit vectors specifying the local coordinate system for the viewer.
@@ -751,7 +746,6 @@ function calcMAndMinv() {
   ];
 }
 
-/* Sets the projection matrices. */
 function getPerspective() {
   P = [
     pn / pr, 0, 0, 0,
