@@ -216,6 +216,50 @@ function createGeometry() {
   star.vertDim = 3;
   star.numElems = star.indexList.length;
   star.theta = 0;
+
+  for (var i = 0; i < 64; i++) {
+    var shard = {};
+    shard.vertices = [0.1, 0.0, 0.0,
+                      0.0, 0.0, 1.0,
+                      0.0, 1.0, 0.0,
+
+                      0.0, 0.0, 1.0,
+                      -1.0, 0.0, 0.0,
+                      0.0, 1.0, 0.0,
+
+                      -1.0, 0.0, 0.0,
+                      0.0, 0.0, -1.0,
+                      0.0, 1.0, 0.0,
+
+                      0.0, 0.0, -1.0,
+                      1.0, 0.0, 0.0,
+                      0.0, 1.0, 0.0,
+
+                      0.1, 0.0, 0.0,
+                      0.0, -1.0, 0.0,
+                      0.0, 0.0, 1.0,
+
+                      0.0, 0.0, 1.0,
+                      0.0, -1.0, 0.0,
+                      -1.0, 0.0, 0.0,
+
+                      -1.0, 0.0, 0.0,
+                      0.0, -1.0, 0.0,
+                      0.0, 0.0, -1.0,
+
+                      0.0, 0.0, -1.0,
+                      0.0, -1.0, 0.0,
+                      1.0, 0.0, 0.0];
+
+    shard.indexList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+    shard.normals = getNormals(shard.vertices, shard.indexList);
+    shard.vertDim = 3;
+    shard.numElems = shard.indexList.length;
+    shard.direction = [(2*Math.random() - 1)/50, (2*Math.random() - 1)/50, (2*Math.random() - 1)/50];
+    shard.position = [0.0, 0.0, 0.0];
+    shard.theta = 2*Math.random();
+    shards.push(shard);
+  }
 }
 
 function createBuffers() {
@@ -587,7 +631,10 @@ function renderScene() {
     drawBox();
     drawEllipsoid();
   } else if (scene === "two") {
-
+    for (var i = 0; i < shards.length; i++) {
+      updateShard(shards[i]);
+      drawShard(shards[i]);
+    }
   } else if (scene === "three") {
     if (scaleUp) {
       scale += 0.005;
@@ -601,6 +648,27 @@ function renderScene() {
     drawStar();
   }
   requestAnimFrame(renderScene)
+}
+
+function updateShard(shard){
+  if (scaleUp) {
+    if (scaleUp >= 1) {
+      scaleUp = false;
+      scaleDown = true;
+    }
+    shard.position[0] += shard.direction[0];
+    shard.position[1] += shard.direction[1];
+    shard.position[2] += shard.direction[2];
+  } else if (scaleDown) {
+    if (scaleDown <= 0) {
+      scaleUp = true;
+      scaleDown = false;
+      scene = "three";
+    }
+    shard.position[0] -= shard.direction[0];
+    shard.position[1] -= shard.direction[1];
+    shard.position[2] -= shard.direction[2];
+  }
 }
 
 function updateSceneThree() {
