@@ -104,6 +104,7 @@ function initGL() {
   sceneBeta = 0.0;
   scale = 1.0;
   scene = "one";
+  shards = [];
 
   setModelView();
   setProjection();
@@ -220,39 +221,40 @@ function createGeometry() {
   for (var i = 0; i < 64; i++) {
     var shard = {};
     shard.vertices = [0.1, 0.0, 0.0,
-                      0.0, 0.0, 1.0,
-                      0.0, 1.0, 0.0,
+                      0.0, 0.0, 0.1,
+                      0.0, 0.1, 0.0,
 
-                      0.0, 0.0, 1.0,
-                      -1.0, 0.0, 0.0,
-                      0.0, 1.0, 0.0,
+                      0.0, 0.0, 0.1,
+                      -0.1, 0.0, 0.0,
+                      0.0, 0.1, 0.0,
 
-                      -1.0, 0.0, 0.0,
-                      0.0, 0.0, -1.0,
-                      0.0, 1.0, 0.0,
+                      -0.1, 0.0, 0.0,
+                      0.0, 0.0, -0.1,
+                      0.0, 0.1, 0.0,
 
-                      0.0, 0.0, -1.0,
-                      1.0, 0.0, 0.0,
-                      0.0, 1.0, 0.0,
+                      0.0, 0.0, -0.1,
+                      0.1, 0.0, 0.0,
+                      0.0, 0.1, 0.0,
 
                       0.1, 0.0, 0.0,
-                      0.0, -1.0, 0.0,
-                      0.0, 0.0, 1.0,
+                      0.0, -0.1, 0.0,
+                      0.0, 0.0, 0.1,
 
-                      0.0, 0.0, 1.0,
-                      0.0, -1.0, 0.0,
-                      -1.0, 0.0, 0.0,
+                      0.0, 0.0, 0.1,
+                      0.0, -0.1, 0.0,
+                      -0.1, 0.0, 0.0,
 
-                      -1.0, 0.0, 0.0,
-                      0.0, -1.0, 0.0,
-                      0.0, 0.0, -1.0,
+                      -0.1, 0.0, 0.0,
+                      0.0, -0.1, 0.0,
+                      0.0, 0.0, -0.1,
 
-                      0.0, 0.0, -1.0,
-                      0.0, -1.0, 0.0,
-                      1.0, 0.0, 0.0];
+                      0.0, 0.0, -0.1,
+                      0.0, -0.1, 0.0,
+                      0.1, 0.0, 0.0];
 
-    shard.indexList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+    shard.indexList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
     shard.normals = getNormals(shard.vertices, shard.indexList);
+    shard.program = initShaders(gl, "shard-vertex-shader", "shard-fragment-shader");
     shard.vertDim = 3;
     shard.numElems = shard.indexList.length;
     shard.direction = [(2*Math.random() - 1)/50, (2*Math.random() - 1)/50, (2*Math.random() - 1)/50];
@@ -492,6 +494,64 @@ function drawStar() {
   gl.drawElements(gl.TRIANGLES, star.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
+function drawShard(shard) {
+  gl.useProgram(shard.program);
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(shard.indexList), gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, verticesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(shard.vertices), gl.STATIC_DRAW);
+  var vertexPosition = gl.getAttribLocation(shard.program, "vertexPosition");
+  gl.vertexAttribPointer(vertexPosition, shard.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(vertexPosition);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalsBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(flatten(shard.normals)), gl.STATIC_DRAW);
+  var nvPosition = gl.getAttribLocation(shard.program, "nv");
+  gl.vertexAttribPointer(nvPosition, shard.vertDim, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(nvPosition);
+
+  // Insert your code here
+  var MLoc = gl.getUniformLocation(shard.program, "M");
+  gl.uniformMatrix4fv(MLoc, false, M);
+
+  var SRotLoc = gl.getUniformLocation(shard.program, "SRot");
+  gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
+
+  var MinvTransLoc = gl.getUniformLocation(shard.program, "MinvTrans");
+  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
+
+  var MinvLoc = gl.getUniformLocation(shard.program, "Minv");
+  gl.uniformMatrix4fv(MinvLoc, false, Minv);
+
+  var SRotInvLoc = gl.getUniformLocation(shard.program, "SRotInv");
+  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
+
+  var SRotInvTransLoc = gl.getUniformLocation(shard.program, "SRotInvTrans");
+  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
+
+  var PLoc = gl.getUniformLocation(shard.program, "P");
+  gl.uniformMatrix4fv(PLoc, false, P);
+
+  var thetaLoc = gl.getUniformLocation(shard.program, "theta");
+  gl.uniform1f(thetaLoc, shard.theta);
+
+  var posLoc = gl.getUniformLocation(shard.program, "pos");
+  gl.uniform3f(posLoc, shard.position[0], shard.position[1], shard.position[2]);
+
+  var lightDirection1Loc = gl.getUniformLocation(shard.program, "lightDirection1");
+  gl.uniform3f(lightDirection1Loc, lightDirection1[0], lightDirection1[1], lightDirection1[2]);
+  var directionColor1Loc = gl.getUniformLocation(shard.program, "directionColor1");
+  gl.uniform3f(directionColor1Loc, directionColor1[0], directionColor1[1], directionColor1[2]);
+  var lightDirection2Loc = gl.getUniformLocation(shard.program, "lightDirection2");
+  gl.uniform3f(lightDirection2Loc, lightDirection2[0], lightDirection2[1], lightDirection2[2])
+  var directionColor2Loc = gl.getUniformLocation(shard.program, "directionColor2");
+  gl.uniform3f(directionColor2Loc, directionColor2[0], directionColor2[1], directionColor2[2])
+
+  gl.drawElements(gl.TRIANGLES, shard.numElems, gl.UNSIGNED_SHORT, 0);
+}
+
 function getSphereData(isEllipse, sphere) {
 
   sphere.vertices = [];
@@ -631,6 +691,22 @@ function renderScene() {
     drawBox();
     drawEllipsoid();
   } else if (scene === "two") {
+    console.log(scale);
+    console.log(scaleDown);
+    if (scaleUp) {
+      scale += 0.005;
+      if (scale >= 1) {
+        scaleUp = false;
+        scaleDown = true;
+      }
+    } else if (scaleDown) {
+      scale -= 0.005;
+      if (scale <= 0) {
+        scaleUp = true;
+        scaleDown = false;
+        scene = "three";
+      }
+    }
     for (var i = 0; i < shards.length; i++) {
       updateShard(shards[i]);
       drawShard(shards[i]);
@@ -652,19 +728,10 @@ function renderScene() {
 
 function updateShard(shard){
   if (scaleUp) {
-    if (scaleUp >= 1) {
-      scaleUp = false;
-      scaleDown = true;
-    }
     shard.position[0] += shard.direction[0];
     shard.position[1] += shard.direction[1];
     shard.position[2] += shard.direction[2];
   } else if (scaleDown) {
-    if (scaleDown <= 0) {
-      scaleUp = true;
-      scaleDown = false;
-      scene = "three";
-    }
     shard.position[0] -= shard.direction[0];
     shard.position[1] -= shard.direction[1];
     shard.position[2] -= shard.direction[2];
