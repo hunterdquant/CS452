@@ -69,6 +69,7 @@ var scale;
 var scaleDown;
 var scaleUp;
 
+/* global and main instatiation */
 function initGL() {
   canvas = document.getElementById("gl-canvas");
   canvas.width = window.innerHeight;
@@ -119,6 +120,7 @@ function initGL() {
   renderScene();
 }
 
+/* Sets model view and viewer location */
 function setModelView() {
   // viewer point, look-at point, up direction.
   e = vec3(0.0, 0.0, 8.0);
@@ -128,6 +130,7 @@ function setModelView() {
   calcMAndMinv();
 }
 
+/* sets the perspective projection */
 function setProjection() {
 
   // Set bounds for projection.
@@ -144,6 +147,7 @@ function setProjection() {
   getPerspective();
 }
 
+/* sets the values for the lighting */
 function setUpLighting() {
 
   // Direction and color value for the diffuse directional light.
@@ -154,7 +158,7 @@ function setUpLighting() {
   directionColor2 = vec3(0.863, 0.196, 0.184);
 }
 
-
+/* creates objects for all shapes */
 function createGeometry() {
   var sphereInds = getSphereIndices();
   ellipsoid = {};
@@ -271,6 +275,7 @@ function createGeometry() {
   }
 }
 
+/* creates commonly used buffers */
 function createBuffers() {
 
   indexBuffer = gl.createBuffer();
@@ -279,6 +284,7 @@ function createBuffers() {
   texCoordBuffer = gl.createBuffer();
 }
 
+/*draws the box object */
 function drawBox() {
 
   gl.useProgram(box.program);
@@ -315,6 +321,7 @@ function drawBox() {
   }
 }
 
+/* draws the ellipsoid object */
 function drawEllipsoid() {
 
   gl.useProgram(ellipsoid.program);
@@ -364,6 +371,7 @@ function drawEllipsoid() {
   gl.drawElements(gl.TRIANGLES, ellipsoid.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
+/* draws the sphere object */
 function drawSphere() {
 
   gl.useProgram(sphere.program);
@@ -421,6 +429,7 @@ function drawSphere() {
   gl.drawElements(gl.TRIANGLES, sphere.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
+/* draws the star object */
 function drawStar() {
 
   gl.useProgram(star.program);
@@ -470,6 +479,7 @@ function drawStar() {
   gl.drawElements(gl.TRIANGLES, star.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
+/* draws the passed star object */
 function drawShard(shard) {
   gl.useProgram(shard.program);
 
@@ -488,7 +498,6 @@ function drawShard(shard) {
   gl.vertexAttribPointer(nvPosition, shard.vertDim, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(nvPosition);
 
-  // Insert your code here
   var MLoc = gl.getUniformLocation(shard.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
@@ -519,6 +528,7 @@ function drawShard(shard) {
   gl.drawElements(gl.TRIANGLES, shard.numElems, gl.UNSIGNED_SHORT, 0);
 }
 
+/* sets data for the passed object */
 function getSphereData(isEllipse, sphere) {
 
   sphere.vertices = [];
@@ -554,7 +564,10 @@ function getSphereData(isEllipse, sphere) {
 }
 
 /* credit to learningwebgl.com lesson 11, because I wouldn't have thought of getting
-  indices like this. */
+  indices like this.
+
+  Gets the indices for longitudinal sphere */
+   */
 function getSphereIndices() {
   var indices = [];
   for (var latNumber = 0; latNumber < latBands; latNumber++) {
@@ -603,6 +616,7 @@ function getNormals(vertices, indexList) {
   return vertNormals;
 }
 
+/* initializes the textures */
 function initTextures() {
     images = [
     document.getElementById("front"),
@@ -646,6 +660,8 @@ function initTextures() {
     boxTextures.push(textureImage);
   }
 }
+
+/* main scene logic loop */
 function renderScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   if (scene === "one") {
@@ -693,6 +709,7 @@ function renderScene() {
   requestAnimFrame(renderScene)
 }
 
+/* updates the shard object */
 function updateShard(shard){
   shard.theta += 0.05;
   if (scaleUp) {
@@ -706,11 +723,13 @@ function updateShard(shard){
   }
 }
 
+/* updates objects in scene three */
 function updateSceneThree() {
   sphere.theta += 0.01;
   star.theta += 0.02;
 }
 
+/* calculates the modelview and modelview inverse for the moved viewer */
 function calcMAndMinv() {
 
   // Unit vectors specifying the local coordinate system for the viewer.
@@ -746,6 +765,7 @@ function calcMAndMinv() {
   ];
 }
 
+/* sets the perspective projection */
 function getPerspective() {
   P = [
     pn / pr, 0, 0, 0,
@@ -755,16 +775,19 @@ function getPerspective() {
   ];
 }
 
+/* handles mouse down */
 function onMouseDown(event) {
   isMouseDown = true;
   mouseX = event.clientX;
   mouseY = event.clientY;
 }
 
+/* handles mouse up*/
 function onMouseUp(event) {
   isMouseDown = false;
 }
 
+/* handles mouse drag and updates the scene rotation */
 function onMouseDrag(event) {
   if (isMouseDown) {
     var x = event.clientX;
@@ -806,10 +829,12 @@ function onMouseDrag(event) {
   }
 }
 
+/* changes scene on key press */
 function changeScene(event) {
   scaleDown = true;
 }
 
+/* returns the vertices for the star */
 function getStarVertices() {
   var vertices = [
                   //front-left-top
@@ -881,6 +906,7 @@ function getStarVertices() {
   return vertices;
 }
 
+/* returns the index list for the star */
 function getStarIndexList() {
   var indices = [0, 1, 2, //flt
                  3, 4, 5, //frt
