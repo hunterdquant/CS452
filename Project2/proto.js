@@ -567,7 +567,6 @@ function getSphereData(isEllipse, sphere) {
   indices like this.
 
   Gets the indices for longitudinal sphere */
-   */
 function getSphereIndices() {
   var indices = [];
   for (var latNumber = 0; latNumber < latBands; latNumber++) {
