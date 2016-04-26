@@ -24,40 +24,47 @@ var vup;
 // Projection bounds.
 var pl, pr, pt, pb, pn, pf;
 
+// various buffers.
 var indexBuffer;
 var verticesBuffer;
 var normalsBuffer;
 var texCoordBuffer;
 
+//Texture and images.
 var cubeMap;
 var boxTextures;
 var images;
 var sphereTexture;
 
-// Directional light with its direction, color, and on state.
+// Directional light with its direction and color.
 // diffuse only.
 var lightDirection1, directionColor1, lightDirection2, directionColor2;
 
+// Sphere information.
 var radius = 2;
 var latBands = 64;
 var longBands = 64;
 
+// Objects to be rendered.
 var ellipsoid;
 var sphere;
 var star;
 var box;
 var shards;
 
+// Mouse event states.
 var isMouseDown;
 var mouseX;
 var mouseY;
 
+// Scene transformations.
 var sceneRotation;
 var sceneRotationInv;
-var sceneAlpha;
-var sceneBeta;
+
+// Scene name (one, two, three)
 var scene;
 
+// Scale and scale states.
 var scale;
 var scaleDown;
 var scaleUp;
@@ -99,8 +106,6 @@ function initGL() {
     0.0, 0.0, 0.0, 1.0
   );
 
-  sceneAlpha = 0.0;
-  sceneBeta = 0.0;
   scale = 1.0;
   scene = "one";
   shards = [];
@@ -111,7 +116,6 @@ function initGL() {
   createGeometry();
   createBuffers();
   initTextures();
-
   renderScene();
 }
 
@@ -435,7 +439,6 @@ function drawStar() {
   gl.vertexAttribPointer(nvPosition, star.vertDim, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(nvPosition);
 
-  // Insert your code here
   var MLoc = gl.getUniformLocation(star.program, "M");
   gl.uniformMatrix4fv(MLoc, false, M);
 
@@ -549,6 +552,8 @@ function getSphereData(isEllipse, sphere) {
   }
 }
 
+/* credit to learningwebgl.com lesson 11, because I wouldn't have thought of getting
+  indices like this. */
 function getSphereIndices() {
   var indices = [];
   for (var latNumber = 0; latNumber < latBands; latNumber++) {

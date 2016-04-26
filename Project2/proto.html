@@ -298,10 +298,10 @@
     precision mediump float;
 
     varying vec3 directional1, directional2;
-
+    vec3 baseColor = vec3(0.3, 0.3, 0.3);
     void main() {
 
-        gl_FragColor = clamp(vec4( directional1 + directional2, 1.0 ), 0.0, 1.0);
+        gl_FragColor = clamp(vec4( directional1 + directional2 + baseColor, 1.0 ), 0.0, 1.0);
     }
 
 </script>
