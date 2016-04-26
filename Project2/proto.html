@@ -216,7 +216,6 @@
     precision mediump float;
 
     varying vec3 directional1, directional2;
-
     void main() {
 
         gl_FragColor = clamp(vec4( directional1 + directional2, 1.0 ), 0.0, 1.0);
@@ -298,7 +297,7 @@
     precision mediump float;
 
     varying vec3 directional1, directional2;
-    vec3 baseColor = vec3(0.3, 0.3, 0.3);
+    vec3 baseColor = vec3(0.15, 0.15, 0.15);
     void main() {
 
         gl_FragColor = clamp(vec4( directional1 + directional2 + baseColor, 1.0 ), 0.0, 1.0);

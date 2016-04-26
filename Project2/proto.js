@@ -221,45 +221,50 @@ function createGeometry() {
   star.numElems = star.indexList.length;
   star.theta = 0;
 
-  for (var i = 0; i < 64; i++) {
+  var shardVerts = [0.1, 0.0, 0.0,
+                    0.0, 0.0, 0.1,
+                    0.0, 0.1, 0.0,
+
+                    0.0, 0.0, 0.1,
+                    -0.1, 0.0, 0.0,
+                    0.0, 0.1, 0.0,
+
+                    -0.1, 0.0, 0.0,
+                    0.0, 0.0, -0.1,
+                    0.0, 0.1, 0.0,
+
+                    0.0, 0.0, -0.1,
+                    0.1, 0.0, 0.0,
+                    0.0, 0.1, 0.0,
+
+                    0.1, 0.0, 0.0,
+                    0.0, -0.1, 0.0,
+                    0.0, 0.0, 0.1,
+
+                    0.0, 0.0, 0.1,
+                    0.0, -0.1, 0.0,
+                    -0.1, 0.0, 0.0,
+
+                    -0.1, 0.0, 0.0,
+                    0.0, -0.1, 0.0,
+                    0.0, 0.0, -0.1,
+
+                    0.0, 0.0, -0.1,
+                    0.0, -0.1, 0.0,
+                    0.1, 0.0, 0.0];
+
+  var shardInds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+  var shardNorms = getNormals(shardVerts, shardInds);
+  var shardProg = initShaders(gl, "shard-vertex-shader", "shard-fragment-shader");
+
+  for (var i = 0; i < 256; i++) {
     var shard = {};
-    shard.vertices = [0.1, 0.0, 0.0,
-                      0.0, 0.0, 0.1,
-                      0.0, 0.1, 0.0,
-
-                      0.0, 0.0, 0.1,
-                      -0.1, 0.0, 0.0,
-                      0.0, 0.1, 0.0,
-
-                      -0.1, 0.0, 0.0,
-                      0.0, 0.0, -0.1,
-                      0.0, 0.1, 0.0,
-
-                      0.0, 0.0, -0.1,
-                      0.1, 0.0, 0.0,
-                      0.0, 0.1, 0.0,
-
-                      0.1, 0.0, 0.0,
-                      0.0, -0.1, 0.0,
-                      0.0, 0.0, 0.1,
-
-                      0.0, 0.0, 0.1,
-                      0.0, -0.1, 0.0,
-                      -0.1, 0.0, 0.0,
-
-                      -0.1, 0.0, 0.0,
-                      0.0, -0.1, 0.0,
-                      0.0, 0.0, -0.1,
-
-                      0.0, 0.0, -0.1,
-                      0.0, -0.1, 0.0,
-                      0.1, 0.0, 0.0];
-
-    shard.indexList = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
-    shard.normals = getNormals(shard.vertices, shard.indexList);
-    shard.program = initShaders(gl, "shard-vertex-shader", "shard-fragment-shader");
+    shard.vertices = shardVerts;
+    shard.indexList = shardInds;
+    shard.normals = shardNorms;
+    shard.program = shardProg;
     shard.vertDim = 3;
-    shard.numElems = shard.indexList.length;
+    shard.numElems = shardInds.length;
     shard.direction = [(2*Math.random() - 1)/50, (2*Math.random() - 1)/50, (2*Math.random() - 1)/50];
     shard.position = [0.0, 0.0, 0.0];
     shard.theta = 2*Math.random();
@@ -659,8 +664,6 @@ function renderScene() {
     drawBox();
     drawEllipsoid();
   } else if (scene === "two") {
-    console.log(scale);
-    console.log(scaleDown);
     if (scaleUp) {
       scale += 0.005;
       if (scale >= 1) {
