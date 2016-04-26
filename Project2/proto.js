@@ -54,7 +54,6 @@ var mouseY;
 
 var sceneRotation;
 var sceneRotationInv;
-var sceneRotationInvTrans;
 var sceneAlpha;
 var sceneBeta;
 var scene;
@@ -286,12 +285,6 @@ function drawBox() {
   var SRotLoc = gl.getUniformLocation(box.program, "SRot");
   gl.uniformMatrix4fv(SRotLoc, false, flatten(sceneRotation));
 
-  var MinvTransLoc = gl.getUniformLocation(box.program, "MinvTrans");
-  gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
-
-  var MinvLoc = gl.getUniformLocation(box.program, "Minv");
-  gl.uniformMatrix4fv(MinvLoc, false, Minv);
-
   PLoc = gl.getUniformLocation(box.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
@@ -353,9 +346,6 @@ function drawEllipsoid() {
   var SRotInvLoc = gl.getUniformLocation(ellipsoid.program, "SRotInv");
   gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
 
-  var SRotInvTransLoc = gl.getUniformLocation(ellipsoid.program, "SRotInvTrans");
-  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
-
   var scaleLoc = gl.getUniformLocation(ellipsoid.program, "s");
   gl.uniform1f(scaleLoc, scale);
 
@@ -404,15 +394,6 @@ function drawSphere() {
 
   var MinvTransLoc = gl.getUniformLocation(sphere.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
-
-  var MinvLoc = gl.getUniformLocation(sphere.program, "Minv");
-  gl.uniformMatrix4fv(MinvLoc, false, Minv);
-
-  var SRotInvLoc = gl.getUniformLocation(sphere.program, "SRotInv");
-  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
-
-  var SRotInvTransLoc = gl.getUniformLocation(sphere.program, "SRotInvTrans");
-  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
 
   var PLoc = gl.getUniformLocation(sphere.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
@@ -464,15 +445,6 @@ function drawStar() {
   var MinvTransLoc = gl.getUniformLocation(star.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
 
-  var MinvLoc = gl.getUniformLocation(star.program, "Minv");
-  gl.uniformMatrix4fv(MinvLoc, false, Minv);
-
-  var SRotInvLoc = gl.getUniformLocation(star.program, "SRotInv");
-  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
-
-  var SRotInvTransLoc = gl.getUniformLocation(star.program, "SRotInvTrans");
-  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
-
   var PLoc = gl.getUniformLocation(star.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
 
@@ -521,15 +493,6 @@ function drawShard(shard) {
 
   var MinvTransLoc = gl.getUniformLocation(shard.program, "MinvTrans");
   gl.uniformMatrix4fv(MinvTransLoc, false, MinvTrans);
-
-  var MinvLoc = gl.getUniformLocation(shard.program, "Minv");
-  gl.uniformMatrix4fv(MinvLoc, false, Minv);
-
-  var SRotInvLoc = gl.getUniformLocation(shard.program, "SRotInv");
-  gl.uniformMatrix4fv(SRotInvLoc, false, flatten(sceneRotationInv));
-
-  var SRotInvTransLoc = gl.getUniformLocation(shard.program, "SRotInvTrans");
-  gl.uniformMatrix4fv(SRotInvTransLoc, false, flatten(sceneRotationInvTrans));
 
   var PLoc = gl.getUniformLocation(shard.program, "P");
   gl.uniformMatrix4fv(PLoc, false, P);
@@ -727,6 +690,7 @@ function renderScene() {
 }
 
 function updateShard(shard){
+  shard.theta += 0.05;
   if (scaleUp) {
     shard.position[0] += shard.direction[0];
     shard.position[1] += shard.direction[1];
@@ -835,7 +799,6 @@ function onMouseDrag(event) {
 
     sceneRotation = mult(mult(yRot, xRot), sceneRotation);
     sceneRotationInv = mult(sceneRotationInv, mult(xRotInv, yRotInv));
-    sceneRotationInvTrans = transpose(sceneRotationInv);
     mouseX = x;
     mouseY = y;
   }

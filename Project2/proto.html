@@ -8,7 +8,6 @@
     attribute vec2 texCoord;
     uniform mat4 M;
     uniform mat4 SRot;
-    uniform mat4 SRotInv;
     uniform mat4 P;
     varying highp vec2 fTexCoord;
     mat4 proj = mat4(
@@ -41,7 +40,6 @@
   uniform mat4 Minv;
   uniform mat4 SRot;
   uniform mat4 SRotInv;
-  uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
   uniform float s;
@@ -90,10 +88,7 @@
   attribute vec3 nv;
   attribute vec2 texCoord;
   uniform mat4 M;
-  uniform mat4 Minv;
   uniform mat4 SRot;
-  uniform mat4 SRotInv;
-  uniform mat4 SRotInvTrans;
   uniform mat4 MinvTrans;
   uniform mat4 P;
   uniform float theta, s;
@@ -143,7 +138,7 @@
   varying highp vec2 fTexCoord;
   void main() {
     vec4 totalDir = vec4(directional1 + directional2, 1.0);
-    vec4 texColor = 0.6 * texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
+    vec4 texColor = 0.4 * texture2D(texMap, vec2(fTexCoord.s, fTexCoord.t));
     gl_FragColor = clamp(totalDir + texColor, 0.0, 1.0);
   }
 </script>
