@@ -19,6 +19,13 @@ The shades:
   - A sphere -> the sphere is texture with a sun texture,
   - A 4 point star -> this is the star I've used for previous labs. It's base color is black.
 
+The light:
+  The lights are 2 directional lights that only have diffuse components.
+  The reason for doing this wasn't just because of simplicity. I thought it would
+  look really cool to have to clashing colors coming from opposing directions that
+  envelope the objects in the scene. After you see the animation I think it's
+  easy to see that I made the write decision.
+
 The animation:
   The animation is broken up into 3 scenes.
 
@@ -45,3 +52,9 @@ The code:
   and it quickly became a lot of code. I would have moved stuff to different files,
   but I've been strapped for time with finals and pre-internship necessities.
   As a result the code is not as documented as I would normally like.
+
+The conclusion:
+  I'm really happy with this animation. The only problem I have is with the
+  interaction with the reflection map. But once I get that taken car of I think
+  this will be a great project to embed into my website.
+  
